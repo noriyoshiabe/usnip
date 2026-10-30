@@ -21,11 +21,21 @@ These cannot be checked in CI. Record the results here.
       `src/app/PasteController.cpp`.
 - [ ] The popup takes keyboard focus while another app is active (`Qt::Popup` + `activateSelf`).
       If not, switch to a `Qt::Tool` window that hides on deactivation.
-- [ ] Clipy (and any other history app in use) ignores copies with ConcealedType.
-- [ ] Restoring the previous pasteboard contents works for text, images and files.
+- [x] Clipy (and any other history app in use) ignores copies with ConcealedType.
+      2026-10-31, macOS 27.0.1, Clipy 1.4.0 (the only history app in use): a copy written by
+      `Pasteboard::writeConcealed` did not reach Clipy's history; a plain copy right after it
+      did. This holds even though Clipy's `kCPYPrefIgnoreConcealedPasteboardType` is 0.
+- [x] Restoring the previous pasteboard contents works for text, images and files.
+      2026-10-31, macOS 27.0.1: a harness linking `src/platform/Pasteboard.mm` restored every
+      item with byte-identical types and data for plain text, HTML + RTF + text, an `NSImage`,
+      PNG data, two file URLs, an empty pasteboard and a plain text copy made by another app.
+      A copy made within the delay is kept, and two pastes in a row restore the original.
+      Copies from Finder and from a browser image were not tried separately.
 - [ ] With a self-signed certificate, Accessibility permission and the Keychain item survive
       a rebuild without new prompts. Also check after `deploy`.
 - [ ] `⌥⌘V` does not clash with anything in daily use.
+      2026-10-31: not taken by the system shortcuts or by Clipy (⇧⌘V, ⌃⌘V, ⇧⌘B, ⌃⌥⇧⌘V).
+      Finder uses ⌥⌘V to move copied files, which a global shortcut hides.
 
 ## Phase 2: Daily use without the editor
 
