@@ -43,11 +43,16 @@ std::optional<QByteArray> write(const std::vector<PlainSnippet> &snippets,
     return out;
 }
 
+bool isExportFile(const QByteArray &data)
+{
+    return static_cast<std::size_t>(data.size()) >= kHeaderSize &&
+           data.startsWith(QByteArray(kMagic, sizeof(kMagic))) &&
+           static_cast<std::uint8_t>(data.at(sizeof(kMagic))) == kFormatVersion;
+}
+
 std::optional<std::vector<PlainSnippet>> read(const QByteArray &data, const SecureBytes &passphrase)
 {
-    if (static_cast<std::size_t>(data.size()) < kHeaderSize ||
-        !data.startsWith(QByteArray(kMagic, sizeof(kMagic))) ||
-        static_cast<std::uint8_t>(data.at(sizeof(kMagic))) != kFormatVersion) {
+    if (!isExportFile(data)) {
         return std::nullopt;
     }
 

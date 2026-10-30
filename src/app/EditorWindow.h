@@ -1,7 +1,11 @@
 #pragma once
 
+#include "core/Snippet.h"
+
 #include <QTimer>
 #include <QWidget>
+
+#include <vector>
 
 class QLineEdit;
 class QListWidget;
@@ -37,6 +41,10 @@ private:
     void removeSnippet();
     void applyListOrder();
     void importJson();
+    void importUsnip();
+    void exportUsnip();
+    bool confirmImport(const std::vector<PlainSnippet> &snippets);
+    bool append(const std::vector<PlainSnippet> &snippets);
     int indexOf(const QString &id) const;
 
     SnippetStore &m_store;

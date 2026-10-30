@@ -25,6 +25,10 @@ std::optional<QByteArray> write(const std::vector<PlainSnippet> &snippets,
                                 const SecureBytes &passphrase,
                                 std::uint32_t iterations = kDefaultIterations);
 
+// Checks the header only, so the caller can tell another kind of file from a wrong passphrase
+// before asking for one.
+bool isExportFile(const QByteArray &data);
+
 // nullopt on a wrong passphrase, a tampered file or an unknown format.
 std::optional<std::vector<PlainSnippet>> read(const QByteArray &data,
                                               const SecureBytes &passphrase);

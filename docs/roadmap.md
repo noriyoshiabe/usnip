@@ -73,13 +73,19 @@ These cannot be checked in CI. Record the results here.
 
 The masked body was dropped (design.md, editor and authentication).
 
-## Phase 4: Settings, export and import
+## Phase 4: Settings, export and import (done)
 
-- [ ] Settings window: shortcut recorder, clear delay (`QSettings`). Defaults ⇧⌘B and 5 s.
+- [x] Settings window: shortcut recorder, clear delay (`QSettings`). Defaults ⇧⌘B and 5 s.
       Other apps' shortcuts cannot be detected (see phase 1), so do not promise a warning.
-- [ ] Export to `.usnip` with a passphrase entered twice
-- [ ] Import `.usnip`, showing count and titles before appending
-- [ ] Offer to trash a plain JSON file after import (already in the menu version)
+- [x] Export to `.usnip` with a passphrase entered twice
+- [x] Import `.usnip`, showing count and titles before appending
+- [x] Offer to trash a plain JSON file after import (already in the menu version)
+      It moved into the editor in phase 3; JSON import now lists titles like `.usnip` import.
+- [x] Verify on a real Mac: recording a shortcut (letters, ⇧ with digits, F keys, a non-US
+      layout), the new shortcut and clear delay take effect and survive a restart, recording
+      the current shortcut does not open the popup, export then import round trip, a wrong
+      passphrase asks again, a non-`.usnip` file is refused
+      2026-10-31, macOS 27: all work.
 
 ## Phase 5: Publish
 

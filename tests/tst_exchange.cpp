@@ -17,6 +17,7 @@ private slots:
     void exportWrongPassphraseFails();
     void exportIsNotPlainText();
     void exportRejectsHugeIterationCount();
+    void isExportFileChecksHeader();
 
 private:
     static std::vector<PlainSnippet> sample()
@@ -101,6 +102,19 @@ void TestExchange::exportRejectsHugeIterationCount()
         (*file)[offset + i] = static_cast<char>(0xff);
     }
     QVERIFY(!exportfile::read(*file, passphrase));
+}
+
+void TestExchange::isExportFileChecksHeader()
+{
+    const auto file = exportfile::write(sample(), SecureBytes::fromUtf8("p"), 1000);
+    QVERIFY(file);
+    QVERIFY(exportfile::isExportFile(*file));
+    QVERIFY(!exportfile::isExportFile(file->left(10)));
+    QVERIFY(!exportfile::isExportFile(jsonimport::serialize(sample())));
+
+    QByteArray otherVersion = *file;
+    otherVersion[4] = static_cast<char>(exportfile::kFormatVersion + 1);
+    QVERIFY(!exportfile::isExportFile(otherVersion));
 }
 
 QTEST_GUILESS_MAIN(TestExchange)

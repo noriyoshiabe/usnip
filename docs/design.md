@@ -15,7 +15,7 @@ Web site passwords are out of scope: they belong in the macOS Passwords app.
 | 1 | A shortcut shows the list of snippet titles | Carbon `RegisterEventHotKey`, a Qt tool window |
 | 2 | Choosing one copies it and pastes it | `NSPasteboard`, then Cmd+V via `CGEventPost` |
 | 3 | Clipboard history apps ignore the copy | `org.nspasteboard.ConcealedType` and `TransientType` |
-| 4 | The copy is removed after 5 seconds | Clear if `changeCount` is unchanged, then restore the previous contents |
+| 4 | The copy is removed after 5 seconds (configurable) | Clear if `changeCount` is unchanged, then restore the previous contents |
 | 5 | Snippets are encrypted | AES-256-CBC + HMAC-SHA256, key in the Keychain |
 | 6 | Snippets can be added and edited | Qt editor window, opened after owner authentication |
 
@@ -33,8 +33,8 @@ A process running as the same user must not get plain text just by reading files
 | Another process reads the key from the Keychain | The item's access list trusts only μSnip's signature; others trigger a prompt | Yes, if the prompt is denied |
 | Backups or cloud sync copy the file | The key stays in the local login keychain, not iCloud | Yes |
 | Clipboard history apps store the secret | ConcealedType marker | Apps that follow nspasteboard.org |
-| The secret stays on the pasteboard | Cleared after 5 seconds | Yes |
-| Malware reads the pasteboard within those 5 seconds | None | No |
+| The secret stays on the pasteboard | Cleared after 5 seconds (by default) | Yes |
+| Malware reads the pasteboard within those seconds | None | No |
 | Screen sharing or someone looking while the editor is open | None; do not open the editor while sharing | No |
 | Keyloggers, root compromise, someone using the unlocked Mac | None | Out of scope |
 
@@ -48,7 +48,8 @@ Objective-C++ files under `src/platform/`, which expose plain C++ headers so App
 reach the Qt side.
 
 ```
-src/app       main.cpp, PopupWindow, PasteController, EditorWindow (later: Settings)
+src/app       main.cpp, PopupWindow, PasteController, EditorWindow, PassphraseDialog,
+              SettingsWindow, ShortcutEdit, Settings
 src/core      SecureBytes, Crypto, SnippetStore, JsonImport, ExportFile   -- unit tested
 src/platform  GlobalHotkey.mm  -> Carbon
               Pasteboard.mm    -> AppKit NSPasteboard
@@ -109,9 +110,9 @@ the backup.
 Target: the paste completes about 0.1 s after a snippet is chosen.
 
 1. **Shortcut.** `RegisterEventHotKey` delivers it; no permission is needed.
-   The default is ⇧⌘B, the snippet shortcut of Clipy, which μSnip replaces. It hides the
-   bookmarks bar shortcut of Safari and Chrome. `RegisterEventHotKey` does not refuse a
-   shortcut another app has registered, so a clash goes unnoticed.
+   The default is ⇧⌘B, the snippet shortcut of Clipy, which μSnip replaces; Settings… changes
+   it. It hides the bookmarks bar shortcut of Safari and Chrome. `RegisterEventHotKey` does not
+   refuse a shortcut another app has registered, so a clash goes unnoticed.
 2. **Remember the target.** `NSWorkspace.frontmostApplication` is recorded.
 3. **Show the filter** near the mouse cursor, kept inside the screen that holds the cursor.
    - No title is shown until something is typed, like Spotlight. Work and private snippets
@@ -124,15 +125,16 @@ Target: the paste completes about 0.1 s after a snippet is chosen.
 4. **Decrypt and copy.** Every item on the pasteboard is saved with all of its types.
    The chosen body is decrypted and written with the ConcealedType and TransientType markers,
    and the resulting `changeCount` is recorded. If our previous secret is still on the
-   pasteboard (two pastes within 5 seconds), the earlier saved contents are kept instead of
-   saving the secret.
+   pasteboard (two pastes within the clear delay), the earlier saved contents are kept instead
+   of saving the secret.
 5. **Return and paste.** The popup closes, the recorded app is activated, and after a short
    delay (50 ms) Cmd+V is posted with `CGEventPost`.
    Without Accessibility permission μSnip only copies.
-6. **Clear after 5 seconds.** If `changeCount` is unchanged, the pasteboard is cleared and the
-   saved contents are written back. If it changed, the user copied something else; the saved
-   contents are dropped. On quit, a pending restore happens immediately. Restored items keep
-   their original types, including another app's ConcealedType.
+6. **Clear after a delay**, 5 seconds by default (1 to 60 in Settings…). If `changeCount` is
+   unchanged, the pasteboard is cleared and the saved contents are written back. If it changed,
+   the user copied something else; the saved contents are dropped. On quit, a pending restore
+   happens immediately. Restored items keep their original types, including another app's
+   ConcealedType.
 
 Whether Clipy honors ConcealedType has not been verified yet. If it does not, Clipy has to go or
 μSnip has to be excluded in its settings. The restored contents may appear in Clipy's history
@@ -150,7 +152,7 @@ The editor shows plain text, so opening it requires owner authentication.
 - **Authentication.** `LAPolicyDeviceOwnerAuthentication`: Touch ID when available, otherwise an
   Apple Watch or the login password.
 - **Layout.** Titles on the left (add, delete, drag to reorder); title and body on the right.
-  A ⋯ button under the list holds Import JSON… (and the export and import actions later).
+  A ⋯ button under the list holds Export to .usnip…, Import .usnip… and Import JSON….
   An agent app may get no menu bar of its own, so the window carries its menu.
 - **Body.** Shown in plain text. Only the selected snippet is decrypted.
   The body is not masked: authentication keeps other people out, and screen sharing is handled
@@ -163,7 +165,25 @@ The editor shows plain text, so opening it requires owner authentication.
   next open authenticates again. The widgets hold the shown body in a `QString`, which cannot be
   wiped, so plain text may stay in freed memory after closing. Accepted: it is one snippet, and
   only after the owner opened it.
-- **Settings.** Only the shortcut and the clear delay, stored with `QSettings`.
+- **Titles.** An empty title becomes "Untitled" when saved: it would be invisible in the popup,
+  and imports refuse it.
+
+## Settings
+
+Only the shortcut and the clear delay. Settings… in the menu bar menu opens them without
+authentication, since neither reveals a snippet. Changes apply at once and are stored with
+`QSettings` in `~/Library/Preferences/io.github.noriyoshiabe.uSnip.plist`; invalid values fall
+back to the defaults.
+
+- **Shortcut recorder.** Click the field and type the combination; Esc keeps the old one.
+  The key is stored as its virtual key code (`QKeyEvent::nativeVirtualKey`), which is what
+  `RegisterEventHotKey` takes, and shown with the character of the current keyboard layout
+  (`UCKeyTranslate`). A Qt key would depend on the layout and on Shift (⇧1 arrives as `!`).
+  Command, Control or Option is required; Shift alone would take a typed character.
+- While recording, the global shortcut is unregistered. Otherwise typing the current shortcut
+  would open the popup instead of reaching the field.
+- Another app's shortcut cannot be detected (see Paste flow), so no clash is warned about.
+  A shortcut macOS refuses outright is reported and the previous one is kept.
 
 ## Import and export
 
@@ -176,7 +196,11 @@ Run from the editor's menu, which is already authenticated.
 | Import JSON | Reads plain JSON `[{"title": "...", "body": "..."}]`. Data from Clipy is converted into this format by the user. |
 
 - Imports append after the existing snippets and never replace them. The count and titles are
-  shown for confirmation first.
+  shown for confirmation first (the first 15 titles, then how many more).
+- Export asks for the destination first, then the passphrase, so cancelling the file dialog
+  costs no typing. The passphrase must be typed twice: a typo would lock the backup away.
+- Import checks the header before asking for a passphrase, so another kind of file is reported
+  as such. A wrong passphrase asks again; a tampered file cannot be told apart from it.
 - `.usnip` layout: `"USNX" | version (1) | salt (16) | iterations (uint32 BE) | seal(json)`,
   where the keys come from PBKDF2 over the passphrase and the header is the associated data.
   The payload is the same JSON exchange format. Storing the iteration count lets it grow later

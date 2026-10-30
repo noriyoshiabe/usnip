@@ -15,7 +15,6 @@ namespace {
 
 using namespace std::chrono_literals;
 
-constexpr auto kRestoreDelay = 5s;
 // Time for the previous app to take focus back before Cmd+V. Tuned in roadmap phase 1.
 constexpr auto kPasteDelay = 50ms;
 
@@ -25,13 +24,17 @@ PasteController::PasteController(SnippetStore &store, QObject *parent)
     : QObject(parent), m_store(store), m_popup(std::make_unique<PopupWindow>())
 {
     m_restoreTimer.setSingleShot(true);
-    m_restoreTimer.setInterval(kRestoreDelay);
     connect(&m_restoreTimer, &QTimer::timeout, this, [this] { m_pasteboard.restoreIfUnchanged(); });
     connect(m_popup.get(), &PopupWindow::chosen, this, &PasteController::paste);
     connect(m_popup.get(), &PopupWindow::dismissed, this, &PasteController::returnToPreviousApp);
 }
 
 PasteController::~PasteController() = default;
+
+void PasteController::setClearDelay(std::chrono::milliseconds delay)
+{
+    m_restoreTimer.setInterval(delay);
+}
 
 void PasteController::showPopup()
 {

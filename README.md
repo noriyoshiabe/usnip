@@ -2,10 +2,11 @@
 
 A minimal macOS menu bar app for pasting secrets such as database passwords from a shortcut.
 
-- Press ⇧⌘B, pick a title, and μSnip pastes the snippet into the app you were using.
+- Press ⇧⌘B (configurable), pick a title, and μSnip pastes the snippet into the app you
+  were using.
 - Snippets are encrypted on disk; the key stays in your login keychain.
 - The copy is marked as concealed, so clipboard history apps can ignore it, and it is removed
-  after 5 seconds, putting back whatever was on the clipboard before.
+  after 5 seconds (configurable), putting back whatever was on the clipboard before.
 
 No third-party dependencies beyond Qt. See [docs/design.md](docs/design.md) for how it works
 and [docs/roadmap.md](docs/roadmap.md) for what is done. μSnip is under development.
@@ -74,6 +75,19 @@ many in at once with **⋯ → Import JSON…** and a file like:
 ```
 
 The file is plain text. μSnip offers to move it to the Trash after importing.
+
+## Backup and moving to another Mac
+
+The data file can only be read with the key in this Mac's keychain. **⋯ → Export to .usnip…**
+writes every snippet to a file encrypted with a passphrase of your choice; **⋯ → Import
+.usnip…** adds them back, on this Mac or another one. A forgotten passphrase cannot be
+recovered.
+
+## Settings
+
+**Settings…** in the menu bar menu changes the shortcut (click the field and type the new
+combination) and how long a pasted snippet stays on the clipboard. μSnip cannot tell whether
+another app already uses a shortcut, so pick one that nothing else needs.
 
 ## License
 

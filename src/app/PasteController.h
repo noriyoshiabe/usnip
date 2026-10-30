@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QTimer>
 
+#include <chrono>
+
 #include <memory>
 #include <sys/types.h>
 
@@ -21,6 +23,9 @@ class PasteController : public QObject {
 public:
     explicit PasteController(SnippetStore &store, QObject *parent = nullptr);
     ~PasteController() override;
+
+    // How long a pasted secret stays on the pasteboard before the previous contents return.
+    void setClearDelay(std::chrono::milliseconds delay);
 
 public slots:
     void showPopup();

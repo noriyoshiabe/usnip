@@ -1,5 +1,7 @@
 #include "EditorWindow.h"
 #include "PasteController.h"
+#include "Settings.h"
+#include "SettingsWindow.h"
 #include "core/SnippetStore.h"
 #include "platform/Auth.h"
 #include "platform/GlobalHotkey.h"
@@ -48,6 +50,9 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("uSnip"));
+    // QSettings reverses it into io.github.noriyoshiabe.uSnip. AppDataLocation uses the
+    // organization name instead, which stays empty, so the data file does not move.
+    QApplication::setOrganizationDomain(QStringLiteral("noriyoshiabe.github.io"));
     QApplication::setApplicationDisplayName(kAppName);
     QApplication::setQuitOnLastWindowClosed(false);
 
@@ -69,6 +74,7 @@ int main(int argc, char *argv[])
     platform::isAccessibilityTrusted(true);
 
     PasteController controller(store);
+    controller.setClearDelay(settings::clearDelay());
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &controller, &PasteController::flush);
 
     platform::GlobalHotkey hotkey;
@@ -101,15 +107,25 @@ int main(int argc, char *argv[])
             platform::activateSelf();
         });
     });
+    QPointer<SettingsWindow> settingsWindow;
+    statusItem.addAction(QObject::tr("Settings…"), [&] {
+        if (!settingsWindow) {
+            settingsWindow = new SettingsWindow(hotkey, controller);
+        }
+        settingsWindow->show();
+        settingsWindow->raise();
+        settingsWindow->activateWindow();
+        platform::activateSelf();
+    });
     statusItem.addSeparator();
     statusItem.addAction(QObject::tr("Quit %1").arg(kAppName), &QCoreApplication::quit);
 
-    // Shift+Command+B, the snippet shortcut of Clipy, which μSnip replaces. Fixed until the
-    // shortcut becomes configurable (roadmap phase 4).
-    if (!hotkey.setShortcut(platform::keys::kB,
-                            platform::keys::kShift | platform::keys::kCommand)) {
+    const platform::Shortcut shortcut = settings::shortcut();
+    if (!hotkey.setShortcut(shortcut)) {
         QMessageBox::warning(nullptr, kAppName,
-                             QObject::tr("Could not register the shortcut ⇧⌘B."));
+                             QObject::tr("Could not register the shortcut %1. Choose another one "
+                                         "in Settings…")
+                                 .arg(platform::shortcutText(shortcut)));
     }
 
     return app.exec();

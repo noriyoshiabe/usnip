@@ -34,10 +34,18 @@ if(APPLE)
         src/app/main.cpp
         src/app/EditorWindow.cpp
         src/app/EditorWindow.h
+        src/app/PassphraseDialog.cpp
+        src/app/PassphraseDialog.h
         src/app/PasteController.cpp
         src/app/PasteController.h
         src/app/PopupWindow.cpp
         src/app/PopupWindow.h
+        src/app/Settings.cpp
+        src/app/Settings.h
+        src/app/SettingsWindow.cpp
+        src/app/SettingsWindow.h
+        src/app/ShortcutEdit.cpp
+        src/app/ShortcutEdit.h
         src/platform/Auth.h
         src/platform/Auth.mm
         src/platform/GlobalHotkey.h

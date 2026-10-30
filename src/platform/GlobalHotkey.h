@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QString>
 
 #include <cstdint>
 #include <memory>
@@ -17,6 +18,17 @@ constexpr std::uint32_t kOption = 0x0800;
 constexpr std::uint32_t kControl = 0x1000;
 } // namespace keys
 
+struct Shortcut {
+    // A virtual key code: the physical key, independent of the keyboard layout.
+    std::uint32_t keyCode = 0;
+    std::uint32_t modifiers = 0;
+
+    bool operator==(const Shortcut &) const = default;
+};
+
+// For display, such as "⇧⌘B". The key is named after the current keyboard layout.
+QString shortcutText(const Shortcut &shortcut);
+
 // A system-wide shortcut via Carbon RegisterEventHotKey. Needs no permission.
 class GlobalHotkey : public QObject {
     Q_OBJECT
@@ -27,7 +39,9 @@ public:
 
     // Replaces the current shortcut. False if macOS refuses it. A shortcut another app has
     // registered is not refused: both apps then receive it.
-    bool setShortcut(std::uint32_t keyCode, std::uint32_t modifiers);
+    bool setShortcut(const Shortcut &shortcut);
+    // Unregisters the shortcut, so that it reaches the focused window instead.
+    void clear();
 
 signals:
     void activated();

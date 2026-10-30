@@ -1,5 +1,7 @@
 #include "EditorWindow.h"
 
+#include "PassphraseDialog.h"
+#include "core/ExportFile.h"
 #include "core/JsonImport.h"
 #include "core/SnippetStore.h"
 
@@ -7,6 +9,7 @@
 #include <QCloseEvent>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFontDatabase>
 #include <QHBoxLayout>
 #include <QLineEdit>
@@ -14,8 +17,10 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPlainTextEdit>
+#include <QSaveFile>
 #include <QShortcut>
 #include <QSplitter>
+#include <QStandardPaths>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -31,6 +36,8 @@ using namespace std::chrono_literals;
 
 constexpr auto kIdleTimeout = 2min;
 constexpr int kIdRole = Qt::UserRole;
+// Enough to recognise what is being imported without the message box outgrowing the screen.
+constexpr int kMaxListedTitles = 15;
 
 QToolButton *toolButton(const QString &text, QWidget *parent)
 {
@@ -55,6 +62,8 @@ EditorWindow::EditorWindow(SnippetStore &store, const QString &storePath, QWidge
     auto *more = toolButton(QStringLiteral("⋯"), this);
     more->setPopupMode(QToolButton::InstantPopup);
     auto *menu = new QMenu(more);
+    menu->addAction(tr("Export to .usnip…"), this, &EditorWindow::exportUsnip);
+    menu->addAction(tr("Import .usnip…"), this, &EditorWindow::importUsnip);
     menu->addAction(tr("Import JSON…"), this, &EditorWindow::importJson);
     more->setMenu(menu);
 
@@ -207,6 +216,11 @@ bool EditorWindow::commit()
     const SecureBytes body(reinterpret_cast<const std::uint8_t *>(utf8.constData()),
                            static_cast<std::size_t>(utf8.size()));
     secureWipe(utf8.data(), static_cast<std::size_t>(utf8.size()));
+    // An empty title would be invisible in the popup, and imports refuse it.
+    if (m_title->text().trimmed().isEmpty()) {
+        m_title->setText(tr("Untitled"));
+        m_list->item(index)->setText(m_title->text());
+    }
     if (!m_store.update(static_cast<std::size_t>(index), m_title->text(), body) || !save()) {
         return false;
     }
@@ -291,18 +305,7 @@ void EditorWindow::importJson()
         QMessageBox::warning(this, windowTitle(), tr("Invalid JSON: %1").arg(error));
         return;
     }
-    const auto answer = QMessageBox::question(this, windowTitle(),
-                                              tr("Add %n snippet(s) after the existing ones?",
-                                                 nullptr, static_cast<int>(snippets->size())));
-    if (answer != QMessageBox::Yes) {
-        return;
-    }
-    const int firstNew = m_list->count();
-    for (const PlainSnippet &snippet : *snippets) {
-        m_store.add(snippet.title, snippet.body);
-    }
-    reloadList(firstNew);
-    if (!save()) {
+    if (!confirmImport(*snippets) || !append(*snippets)) {
         return;
     }
     const auto trash = QMessageBox::question(
@@ -310,6 +313,130 @@ void EditorWindow::importJson()
     if (trash == QMessageBox::Yes) {
         QFile::moveToTrash(path);
     }
+}
+
+void EditorWindow::importUsnip()
+{
+    commit();
+    m_idleTimer.stop();
+    const QString path = QFileDialog::getOpenFileName(this, tr("Import .usnip"), QString(),
+                                                      tr("μSnip export (*.usnip)"));
+    m_idleTimer.start();
+    if (path.isEmpty()) {
+        return;
+    }
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, windowTitle(), tr("Could not open %1.").arg(path));
+        return;
+    }
+    const QByteArray data = file.readAll();
+    file.close();
+    if (!exportfile::isExportFile(data)) {
+        QMessageBox::warning(this, windowTitle(), tr("%1 is not a μSnip export file.").arg(path));
+        return;
+    }
+
+    QString message = tr("Enter the passphrase of %1.").arg(QFileInfo(path).fileName());
+    std::optional<std::vector<PlainSnippet>> snippets;
+    while (!snippets) {
+        const auto passphrase =
+            askPassphrase(this, tr("Import .usnip"), message, PassphraseMode::Enter);
+        if (!passphrase) {
+            return;
+        }
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        snippets = exportfile::read(data, *passphrase);
+        QApplication::restoreOverrideCursor();
+        message = tr("Wrong passphrase, or the file is damaged. Try again.");
+    }
+    if (confirmImport(*snippets)) {
+        append(*snippets);
+    }
+}
+
+void EditorWindow::exportUsnip()
+{
+    if (!commit()) {
+        return;
+    }
+    if (m_store.snippets().empty()) {
+        QMessageBox::information(this, windowTitle(), tr("There are no snippets to export."));
+        return;
+    }
+    m_idleTimer.stop();
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export to .usnip"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) +
+            QStringLiteral("/snippets.usnip"),
+        tr("μSnip export (*.usnip)"));
+    m_idleTimer.start();
+    if (path.isEmpty()) {
+        return;
+    }
+    const auto passphrase = askPassphrase(
+        this, tr("Export to .usnip"),
+        tr("The export file is encrypted with this passphrase instead of the key in the "
+           "Keychain, so it can be imported on another Mac. It cannot be recovered if forgotten."),
+        PassphraseMode::Create);
+    if (!passphrase) {
+        return;
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    std::vector<PlainSnippet> snippets = m_store.decryptAll();
+    // Older versions of the editor kept empty titles, which import refuses.
+    for (PlainSnippet &snippet : snippets) {
+        if (snippet.title.trimmed().isEmpty()) {
+            snippet.title = tr("Untitled");
+        }
+    }
+    const auto data = exportfile::write(snippets, *passphrase);
+    snippets.clear();
+    QApplication::restoreOverrideCursor();
+    QSaveFile file(path);
+    if (!data || !file.open(QIODevice::WriteOnly) || file.write(*data) != data->size() ||
+        !file.commit()) {
+        QMessageBox::critical(this, windowTitle(), tr("Could not write %1.").arg(path));
+        return;
+    }
+    QMessageBox::information(
+        this, windowTitle(),
+        tr("Exported %n snippet(s).", nullptr, static_cast<int>(m_store.snippets().size())));
+}
+
+// Shows how many snippets will be added and their titles, and asks to go ahead.
+bool EditorWindow::confirmImport(const std::vector<PlainSnippet> &snippets)
+{
+    if (snippets.empty()) {
+        QMessageBox::information(this, windowTitle(), tr("The file holds no snippets."));
+        return false;
+    }
+    QStringList titles;
+    for (const PlainSnippet &snippet : snippets) {
+        if (titles.size() == kMaxListedTitles) {
+            titles.append(
+                tr("and %n more", nullptr, static_cast<int>(snippets.size()) - kMaxListedTitles));
+            break;
+        }
+        titles.append(snippet.title);
+    }
+    QMessageBox box(QMessageBox::Question, windowTitle(),
+                    tr("Add %n snippet(s) after the existing ones?", nullptr,
+                       static_cast<int>(snippets.size())),
+                    QMessageBox::Yes | QMessageBox::No, this);
+    box.setInformativeText(titles.join(QLatin1Char('\n')));
+    return box.exec() == QMessageBox::Yes;
+}
+
+bool EditorWindow::append(const std::vector<PlainSnippet> &snippets)
+{
+    const int firstNew = m_list->count();
+    for (const PlainSnippet &snippet : snippets) {
+        m_store.add(snippet.title, snippet.body);
+    }
+    reloadList(firstNew);
+    return save();
 }
 
 int EditorWindow::indexOf(const QString &id) const
