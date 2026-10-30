@@ -52,9 +52,12 @@ These cannot be checked in CI. Record the results here.
 ## Phase 2: Daily use without the editor
 
 - [ ] Show an error in the popup when there are no snippets, pointing to Import JSON…
-- [ ] Remember the last chosen snippet and preselect it
-- [ ] Menu bar menu: "Clear clipboard now"
-- [ ] Log nothing that contains titles or bodies (audit)
+      Waits for the popup UI discussion (filtering and the like).
+- [x] Log nothing that contains titles or bodies (audit)
+      2026-10-31: nothing in `src` logs. Dialogs and the tray show only paths, counts and
+      fixed text; JSON import errors name the item index and Qt's parse error, never the
+      content. The two exceptions (random generator, PBKDF2 failure) carry fixed text. Tests
+      print values only on failure, and every value is made up.
 
 ## Phase 3: Editor
 
