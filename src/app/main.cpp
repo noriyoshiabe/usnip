@@ -128,10 +128,11 @@ int main(int argc, char *argv[])
     tray.setToolTip(kAppName);
     tray.show();
 
-    // Option+Command+V until the shortcut becomes configurable (roadmap phase 4).
-    if (!hotkey.setShortcut(platform::keys::kV,
-                            platform::keys::kOption | platform::keys::kCommand)) {
-        tray.showMessage(kAppName, QObject::tr("The shortcut ⌥⌘V is already in use."));
+    // Shift+Command+B, the snippet shortcut of Clipy, which μSnip replaces. Fixed until the
+    // shortcut becomes configurable (roadmap phase 4).
+    if (!hotkey.setShortcut(platform::keys::kB,
+                            platform::keys::kShift | platform::keys::kCommand)) {
+        tray.showMessage(kAppName, QObject::tr("Could not register the shortcut ⇧⌘B."));
     }
 
     return app.exec();

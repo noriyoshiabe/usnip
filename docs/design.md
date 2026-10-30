@@ -107,7 +107,9 @@ the backup.
 Target: the paste completes about 0.1 s after a snippet is chosen.
 
 1. **Shortcut.** `RegisterEventHotKey` delivers it; no permission is needed.
-   The default is ⌥⌘V until the settings screen exists.
+   The default is ⇧⌘B, the snippet shortcut of Clipy, which μSnip replaces. It hides the
+   bookmarks bar shortcut of Safari and Chrome. `RegisterEventHotKey` does not refuse a
+   shortcut another app has registered, so a clash goes unnoticed.
 2. **Remember the target.** `NSWorkspace.frontmostApplication` is recorded.
 3. **Show the list** near the mouse cursor, kept inside the screen that holds the cursor.
    - Typing filters, Up/Down move, Return chooses, Esc closes.

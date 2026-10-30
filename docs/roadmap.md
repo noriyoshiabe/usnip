@@ -37,15 +37,17 @@ These cannot be checked in CI. Record the results here.
       PNG data, two file URLs, an empty pasteboard and a plain text copy made by another app.
       A copy made within the delay is kept, and two pastes in a row restore the original.
       Copies from Finder and from a browser image were not tried separately.
-- [ ] With a self-signed certificate, Accessibility permission and the Keychain item survive
+- [x] With a self-signed certificate, Accessibility permission and the Keychain item survive
       a rebuild without new prompts. Also check after `deploy`.
-      2026-10-31, rebuilds: Accessibility survives. The Keychain asks again after every
+      2026-10-31, rebuilds and `deploy`: Accessibility survives. The Keychain asks again after every
       rebuild, because a certificate without a team ID puts the build's `cdhash` in the item's
       partition list. Accepted rather than depending on a paid Apple developer account; the
-      README says so. `deploy` not checked yet.
-- [ ] `⌥⌘V` does not clash with anything in daily use.
-      2026-10-31: not taken by the system shortcuts or by Clipy (⇧⌘V, ⌃⌘V, ⇧⌘B, ⌃⌥⇧⌘V).
-      Finder uses ⌥⌘V to move copied files, which a global shortcut hides.
+      README says so.
+- [x] `⌥⌘V` does not clash with anything in daily use.
+      2026-10-31: not taken by the system shortcuts or by Clipy (⇧⌘V, ⌃⌘V, ⇧⌘B, ⌃⌥⇧⌘V),
+      but Finder uses it to move copied files. The default is now ⇧⌘B, Clipy's snippet
+      shortcut, which μSnip replaces; Clipy's must be cleared meanwhile. `RegisterEventHotKey`
+      succeeds even for a shortcut another app holds, so the "in use" check cannot be trusted.
 
 ## Phase 2: Daily use without the editor
 
@@ -64,7 +66,8 @@ These cannot be checked in CI. Record the results here.
 
 ## Phase 4: Settings, export and import
 
-- [ ] Settings window: shortcut recorder, clear delay (`QSettings`)
+- [ ] Settings window: shortcut recorder, clear delay (`QSettings`). Defaults ⇧⌘B and 5 s.
+      Other apps' shortcuts cannot be detected (see phase 1), so do not promise a warning.
 - [ ] Export to `.usnip` with a passphrase entered twice
 - [ ] Import `.usnip`, showing count and titles before appending
 - [ ] Offer to trash a plain JSON file after import (already in the menu version)
