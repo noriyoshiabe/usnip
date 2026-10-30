@@ -3,6 +3,7 @@
 #include <QStringList>
 #include <QWidget>
 
+class QLabel;
 class QLineEdit;
 class QListWidget;
 
@@ -11,8 +12,9 @@ namespace usnip {
 // Frameless list of snippet titles shown near the mouse cursor.
 // A Qt::Tool window rather than Qt::Popup: on macOS a Qt popup never becomes the key window,
 // and with no other window of ours to forward keys from, typing would go nowhere.
-// Typing filters, Up/Down move, Return chooses, Esc closes, 1-9 choose directly while the
-// filter is empty.
+// Titles stay hidden until something is typed, so work and private snippets are not shown
+// side by side on screen. Typing filters, Up/Down move, Return chooses, Cmd+1-9 choose the
+// first nine matches directly, Esc closes.
 class PopupWindow : public QWidget {
     Q_OBJECT
 
@@ -35,9 +37,13 @@ private:
     void applyFilter(const QString &text);
     void chooseRow(int row);
     void moveSelection(int delta);
+    int rowHeight() const;
+    int visibleRow(int n) const;
+    void updateHeight(int matches);
 
     QLineEdit *m_filter;
     QListWidget *m_list;
+    QLabel *m_emptyHint;
 };
 
 } // namespace usnip

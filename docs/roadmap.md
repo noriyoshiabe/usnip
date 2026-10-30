@@ -51,8 +51,8 @@ These cannot be checked in CI. Record the results here.
 
 ## Phase 2: Daily use without the editor
 
-- [ ] Show an error in the popup when there are no snippets, pointing to Import JSON…
-      Waits for the popup UI discussion (filtering and the like).
+- [x] Show an error in the popup when there are no snippets, pointing to Import JSON…
+- [x] Popup shows titles only after typing; ⌘1–⌘9 choose among the matches (design.md, paste flow)
 - [x] Log nothing that contains titles or bodies (audit)
       2026-10-31: nothing in `src` logs. Dialogs and the tray show only paths, counts and
       fixed text; JSON import errors name the item index and Qt's parse error, never the

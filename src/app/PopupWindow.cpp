@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPainter>
@@ -20,7 +21,7 @@ constexpr int kVisibleRows = 10;
 constexpr int kDirectChoices = 9;
 constexpr int kHintRole = Qt::UserRole + 1;
 
-// Draws the 1-9 key hint, faint and right aligned, eliding the title so the two never overlap.
+// Draws the Cmd+1-9 key hint, faint and right aligned, eliding the title so the two never overlap.
 class KeyHintDelegate : public QStyledItemDelegate {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
@@ -75,19 +76,22 @@ void useStrongSelection(QListWidget *list)
 
 PopupWindow::PopupWindow(QWidget *parent)
     : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint), m_filter(new QLineEdit(this)),
-      m_list(new QListWidget(this))
+      m_list(new QListWidget(this)), m_emptyHint(new QLabel(this))
 {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(6, 6, 6, 6);
     layout->setSpacing(4);
     layout->addWidget(m_filter);
     layout->addWidget(m_list);
+    layout->addWidget(m_emptyHint);
 
     m_filter->setPlaceholderText(tr("Filter"));
     m_filter->installEventFilter(this);
     m_list->setFocusPolicy(Qt::NoFocus);
     m_list->setUniformItemSizes(true);
     m_list->setItemDelegate(new KeyHintDelegate(m_list));
+    m_emptyHint->setText(tr("No snippets. Use Import JSON… in the menu bar."));
+    m_emptyHint->setEnabled(false);
 
     connect(m_filter, &QLineEdit::textChanged, this, &PopupWindow::applyFilter);
     connect(m_list, &QListWidget::itemActivated, this,
@@ -119,9 +123,10 @@ void PopupWindow::setTitles(const QStringList &titles)
 
 void PopupWindow::showNear(const QPoint &globalPos)
 {
-    const int rowHeight = std::max(m_list->sizeHintForRow(0), fontMetrics().height() + 4);
-    const int rows = std::clamp(m_list->count(), 1, kVisibleRows);
-    resize(kWidth, m_filter->sizeHint().height() + rows * rowHeight + 24);
+    // The window grows downwards as matches appear, so keep room for the tallest list.
+    const QMargins margins = layout()->contentsMargins();
+    const int maxHeight = margins.top() + m_filter->sizeHint().height() + layout()->spacing() +
+                          kVisibleRows * rowHeight() + 2 * m_list->frameWidth() + margins.bottom();
 
     QScreen *screen = QGuiApplication::screenAt(globalPos);
     if (!screen) {
@@ -129,7 +134,7 @@ void PopupWindow::showNear(const QPoint &globalPos)
     }
     const QRect area = screen->availableGeometry();
     const int x = std::clamp(globalPos.x(), area.left(), area.right() - width() + 1);
-    const int y = std::clamp(globalPos.y(), area.top(), area.bottom() - height() + 1);
+    const int y = std::clamp(globalPos.y(), area.top(), area.bottom() - maxHeight + 1);
     move(x, y);
 
     useStrongSelection(m_list);
@@ -163,9 +168,11 @@ bool PopupWindow::eventFilter(QObject *watched, QEvent *event)
     default:
         break;
     }
-    if (m_filter->text().isEmpty() && key->modifiers() == Qt::NoModifier &&
-        key->key() >= Qt::Key_1 && key->key() < Qt::Key_1 + kDirectChoices) {
-        chooseRow(key->key() - Qt::Key_1);
+    // Qt maps Cmd to Qt::ControlModifier on macOS. Plain digits are left to the filter, since
+    // titles may contain them.
+    if (key->modifiers() == Qt::ControlModifier && key->key() >= Qt::Key_1 &&
+        key->key() < Qt::Key_1 + kDirectChoices) {
+        chooseRow(visibleRow(key->key() - Qt::Key_1));
         return true;
     }
     return QWidget::eventFilter(watched, event);
@@ -173,18 +180,30 @@ bool PopupWindow::eventFilter(QObject *watched, QEvent *event)
 
 void PopupWindow::applyFilter(const QString &text)
 {
+    // Every word must appear in the title, in any order. simplified() also turns the full-width
+    // space a Japanese input method types into a plain one.
+    const QStringList words = text.simplified().split(u' ', Qt::SkipEmptyParts);
+    int matches = 0;
     int firstVisible = -1;
     for (int row = 0; row < m_list->count(); ++row) {
         QListWidgetItem *item = m_list->item(row);
-        const bool match = item->text().contains(text, Qt::CaseInsensitive);
+        const QString title = item->text();
+        const bool match =
+            !words.isEmpty() && std::ranges::all_of(words, [&title](const QString &word) {
+                return title.contains(word, Qt::CaseInsensitive);
+            });
         item->setHidden(!match);
-        const bool direct = text.isEmpty() && row < kDirectChoices;
-        item->setData(kHintRole, direct ? QString::number(row + 1) : QString());
-        if (match && firstVisible < 0) {
-            firstVisible = row;
+        const bool direct = match && matches < kDirectChoices;
+        item->setData(kHintRole, direct ? QStringLiteral("⌘%1").arg(matches + 1) : QString());
+        if (match) {
+            if (firstVisible < 0) {
+                firstVisible = row;
+            }
+            ++matches;
         }
     }
     m_list->setCurrentRow(firstVisible);
+    updateHeight(matches);
 }
 
 void PopupWindow::chooseRow(int row)
@@ -210,6 +229,32 @@ void PopupWindow::moveSelection(int delta)
             return;
         }
     }
+}
+
+int PopupWindow::rowHeight() const
+{
+    return std::max(m_list->sizeHintForRow(0), fontMetrics().height() + 4);
+}
+
+// Returns the row of the n-th visible item, or -1.
+int PopupWindow::visibleRow(int n) const
+{
+    for (int row = 0; row < m_list->count(); ++row) {
+        if (!m_list->item(row)->isHidden() && n-- == 0) {
+            return row;
+        }
+    }
+    return -1;
+}
+
+void PopupWindow::updateHeight(int matches)
+{
+    m_list->setVisible(matches > 0);
+    m_list->setFixedHeight(std::min(matches, kVisibleRows) * rowHeight() +
+                           2 * m_list->frameWidth());
+    m_emptyHint->setVisible(m_list->count() == 0);
+    layout()->activate();
+    resize(kWidth, sizeHint().height());
 }
 
 } // namespace usnip

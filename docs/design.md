@@ -111,9 +111,14 @@ Target: the paste completes about 0.1 s after a snippet is chosen.
    bookmarks bar shortcut of Safari and Chrome. `RegisterEventHotKey` does not refuse a
    shortcut another app has registered, so a clash goes unnoticed.
 2. **Remember the target.** `NSWorkspace.frontmostApplication` is recorded.
-3. **Show the list** near the mouse cursor, kept inside the screen that holds the cursor.
-   - Typing filters, Up/Down move, Return chooses, Esc closes.
-   - While the filter is empty, 1–9 choose the first nine rows directly.
+3. **Show the filter** near the mouse cursor, kept inside the screen that holds the cursor.
+   - No title is shown until something is typed, like Spotlight. Work and private snippets
+     live side by side, and a full list would put all of them on screen at once.
+   - Typing filters: every space-separated word must appear in the title (substring, case
+     insensitive, any order). The list grows downwards with the matches.
+     No match shows nothing.
+   - Up/Down move, Return chooses, ⌘1–⌘9 choose the first nine matches directly, Esc closes.
+   - With no snippets at all, a line points to Import JSON….
 4. **Decrypt and copy.** Every item on the pasteboard is saved with all of its types.
    The chosen body is decrypted and written with the ConcealedType and TransientType markers,
    and the resulting `changeCount` is recorded. If our previous secret is still on the
