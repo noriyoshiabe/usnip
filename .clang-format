@@ -1,0 +1,15 @@
+# Brace style is Stroustrup: function bodies open `{` on a new line, other blocks on the
+# same line, `else` and `catch` on a new line. See docs/coding-style.md.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+BreakBeforeBraces: Stroustrup
+AllowShortFunctionsOnASingleLine: None
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+PointerAlignment: Right
+FixNamespaceComments: true
+IncludeBlocks: Preserve
+ObjCBlockIndentWidth: 4
