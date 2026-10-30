@@ -55,6 +55,7 @@ src/platform  GlobalHotkey.mm  -> Carbon
               Paste.mm         -> NSWorkspace, CGEvent, Accessibility
               Keychain.mm      -> Security.framework
               Auth.mm          -> LocalAuthentication
+              StatusItem.mm    -> AppKit NSStatusItem (menu bar icon)
 ```
 
 `src/core` has no UI and no Objective-C. It depends on QtCore and CommonCrypto only, and
@@ -141,7 +142,10 @@ once more; they were there already.
 
 The editor shows plain text, so opening it requires owner authentication.
 
-- **Entry point.** A menu bar icon (`QSystemTrayIcon`, drawn "μ") with Edit…, Settings…, Quit.
+- **Entry point.** A menu bar icon (`NSStatusItem`, drawn "μ") with Edit…, Settings…, Quit.
+  Not `QSystemTrayIcon`: in Qt 6.11 it reads `clickCount` from `NSApp.currentEvent` without
+  checking the event type. On macOS 27 the menu opens from a scene action, so after typing in
+  the editor that event is a key event and AppKit aborts the app.
   `LSUIElement` keeps μSnip out of the Dock.
 - **Authentication.** `LAPolicyDeviceOwnerAuthentication`: Touch ID when available, otherwise an
   Apple Watch or the login password.

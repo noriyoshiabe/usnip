@@ -48,6 +48,8 @@ if(APPLE)
         src/platform/Pasteboard.mm
         src/platform/Paste.h
         src/platform/Paste.mm
+        src/platform/StatusItem.h
+        src/platform/StatusItem.mm
     )
     set_target_properties(uSnip PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/Info.plist.in

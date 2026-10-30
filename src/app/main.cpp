@@ -5,14 +5,13 @@
 #include "platform/GlobalHotkey.h"
 #include "platform/Keychain.h"
 #include "platform/Paste.h"
+#include "platform/StatusItem.h"
 
 #include <QApplication>
-#include <QMenu>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPointer>
 #include <QStandardPaths>
-#include <QSystemTrayIcon>
 
 using namespace usnip;
 
@@ -27,22 +26,20 @@ QString storePath()
            QStringLiteral("/snippets.bin");
 }
 
-// A template image, so macOS tints it for light and dark menu bars.
-QIcon trayIcon()
+// Drawn at 2x for a 22 pt menu bar icon. Only the alpha matters: it is used as a template.
+QImage statusIcon()
 {
-    QPixmap pixmap(44, 44);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
+    QImage image(44, 44, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
     QFont font = painter.font();
     font.setPixelSize(36);
     font.setBold(true);
     painter.setFont(font);
     painter.setPen(Qt::black);
-    painter.drawText(pixmap.rect(), Qt::AlignCenter, QStringLiteral("μ"));
+    painter.drawText(image.rect(), Qt::AlignCenter, QStringLiteral("μ"));
     painter.end();
-    QIcon icon(pixmap);
-    icon.setIsMask(true);
-    return icon;
+    return image;
 }
 
 } // namespace
@@ -78,11 +75,10 @@ int main(int argc, char *argv[])
     QObject::connect(&hotkey, &platform::GlobalHotkey::activated, &controller,
                      &PasteController::showPopup);
 
-    QSystemTrayIcon tray(trayIcon());
-    QMenu menu;
+    platform::StatusItem statusItem(statusIcon(), kAppName);
     QPointer<EditorWindow> editor;
     bool authenticating = false;
-    menu.addAction(QObject::tr("Edit…"), [&] {
+    statusItem.addAction(QObject::tr("Edit…"), [&] {
         if (editor) {
             editor->raise();
             editor->activateWindow();
@@ -105,17 +101,15 @@ int main(int argc, char *argv[])
             platform::activateSelf();
         });
     });
-    menu.addSeparator();
-    menu.addAction(QObject::tr("Quit %1").arg(kAppName), &app, &QCoreApplication::quit);
-    tray.setContextMenu(&menu);
-    tray.setToolTip(kAppName);
-    tray.show();
+    statusItem.addSeparator();
+    statusItem.addAction(QObject::tr("Quit %1").arg(kAppName), &QCoreApplication::quit);
 
     // Shift+Command+B, the snippet shortcut of Clipy, which μSnip replaces. Fixed until the
     // shortcut becomes configurable (roadmap phase 4).
     if (!hotkey.setShortcut(platform::keys::kB,
                             platform::keys::kShift | platform::keys::kCommand)) {
-        tray.showMessage(kAppName, QObject::tr("Could not register the shortcut ⇧⌘B."));
+        QMessageBox::warning(nullptr, kAppName,
+                             QObject::tr("Could not register the shortcut ⇧⌘B."));
     }
 
     return app.exec();
