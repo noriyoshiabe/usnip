@@ -59,14 +59,17 @@ These cannot be checked in CI. Record the results here.
       content. The two exceptions (random generator, PBKDF2 failure) carry fixed text. Tests
       print values only on failure, and every value is made up.
 
-## Phase 3: Editor
+## Phase 3: Editor (done)
 
 - [x] `EditorWindow`: list on the left (add, delete, drag to reorder), title and body on the right
 - [x] Open only after `platform::authenticateOwner`; discard plain text on close or after 2 minutes idle
 - [x] Save re-encrypts the whole file, as changes are made (no Save button)
 - [x] Move Import JSON… into the editor's ⋯ menu
-- [ ] Verify on a real Mac: authentication, edit and reorder reach the popup and survive a
+- [x] Verify on a real Mac: authentication, edit and reorder reach the popup and survive a
       restart, idle close, Import JSON…, pasting while the editor is open
+      2026-10-31, macOS 27: all work. Clicking the menu bar icon after typing in the editor
+      aborted the app inside Qt 6.11's `QSystemTrayIcon`; the icon is now an `NSStatusItem`
+      (design.md, editor and authentication).
 
 The masked body was dropped (design.md, editor and authentication).
 
