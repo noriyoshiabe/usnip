@@ -32,6 +32,8 @@ target_compile_options(usnip_core PRIVATE -Wall -Wextra -Wpedantic)
 if(APPLE)
     qt_add_executable(uSnip MACOSX_BUNDLE
         src/app/main.cpp
+        src/app/EditorWindow.cpp
+        src/app/EditorWindow.h
         src/app/PasteController.cpp
         src/app/PasteController.h
         src/app/PopupWindow.cpp

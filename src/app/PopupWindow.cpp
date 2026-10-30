@@ -90,7 +90,7 @@ PopupWindow::PopupWindow(QWidget *parent)
     m_list->setFocusPolicy(Qt::NoFocus);
     m_list->setUniformItemSizes(true);
     m_list->setItemDelegate(new KeyHintDelegate(m_list));
-    m_emptyHint->setText(tr("No snippets. Use Import JSON… in the menu bar."));
+    m_emptyHint->setText(tr("No snippets. Add them with Edit… in the menu bar."));
     m_emptyHint->setEnabled(false);
 
     connect(m_filter, &QLineEdit::textChanged, this, &PopupWindow::applyFilter);

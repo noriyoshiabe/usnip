@@ -1,16 +1,16 @@
+#include "EditorWindow.h"
 #include "PasteController.h"
-#include "core/JsonImport.h"
 #include "core/SnippetStore.h"
+#include "platform/Auth.h"
 #include "platform/GlobalHotkey.h"
 #include "platform/Keychain.h"
 #include "platform/Paste.h"
 
 #include <QApplication>
-#include <QFile>
-#include <QFileDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPointer>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
 
@@ -43,47 +43,6 @@ QIcon trayIcon()
     QIcon icon(pixmap);
     icon.setIsMask(true);
     return icon;
-}
-
-// Temporary entry point until the editor exists (roadmap phase 3).
-void importJson(SnippetStore &store)
-{
-    const QString path = QFileDialog::getOpenFileName(nullptr, QObject::tr("Import JSON"),
-                                                      QString(), QObject::tr("JSON (*.json)"));
-    if (path.isEmpty()) {
-        return;
-    }
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(nullptr, kAppName, QObject::tr("Could not open %1.").arg(path));
-        return;
-    }
-    QString error;
-    const auto snippets = jsonimport::parse(file.readAll(), &error);
-    file.close();
-    if (!snippets) {
-        QMessageBox::warning(nullptr, kAppName, QObject::tr("Invalid JSON: %1").arg(error));
-        return;
-    }
-    const auto answer =
-        QMessageBox::question(nullptr, kAppName,
-                              QObject::tr("Add %n snippet(s) after the existing ones?", nullptr,
-                                          static_cast<int>(snippets->size())));
-    if (answer != QMessageBox::Yes) {
-        return;
-    }
-    for (const PlainSnippet &snippet : *snippets) {
-        store.add(snippet.title, snippet.body);
-    }
-    if (!store.saveFile(storePath())) {
-        QMessageBox::critical(nullptr, kAppName, QObject::tr("Could not save the snippets."));
-        return;
-    }
-    const auto trash = QMessageBox::question(
-        nullptr, kAppName, QObject::tr("The JSON file is not encrypted. Move it to the Trash?"));
-    if (trash == QMessageBox::Yes) {
-        QFile::moveToTrash(path);
-    }
 }
 
 } // namespace
@@ -121,7 +80,31 @@ int main(int argc, char *argv[])
 
     QSystemTrayIcon tray(trayIcon());
     QMenu menu;
-    menu.addAction(QObject::tr("Import JSON…"), [&store] { importJson(store); });
+    QPointer<EditorWindow> editor;
+    bool authenticating = false;
+    menu.addAction(QObject::tr("Edit…"), [&] {
+        if (editor) {
+            editor->raise();
+            editor->activateWindow();
+            platform::activateSelf();
+            return;
+        }
+        if (authenticating) {
+            return;
+        }
+        authenticating = true;
+        platform::authenticateOwner(QObject::tr("open the snippet editor"), [&](bool success) {
+            authenticating = false;
+            if (!success) {
+                return;
+            }
+            editor = new EditorWindow(store, storePath());
+            editor->show();
+            editor->raise();
+            editor->activateWindow();
+            platform::activateSelf();
+        });
+    });
     menu.addSeparator();
     menu.addAction(QObject::tr("Quit %1").arg(kAppName), &app, &QCoreApplication::quit);
     tray.setContextMenu(&menu);

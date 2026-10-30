@@ -35,6 +35,7 @@ A process running as the same user must not get plain text just by reading files
 | Clipboard history apps store the secret | ConcealedType marker | Apps that follow nspasteboard.org |
 | The secret stays on the pasteboard | Cleared after 5 seconds | Yes |
 | Malware reads the pasteboard within those 5 seconds | None | No |
+| Screen sharing or someone looking while the editor is open | None; do not open the editor while sharing | No |
 | Keyloggers, root compromise, someone using the unlocked Mac | None | Out of scope |
 
 Anyone who can use the unlocked Mac can paste snippets. That is the accepted price of
@@ -47,7 +48,7 @@ Objective-C++ files under `src/platform/`, which expose plain C++ headers so App
 reach the Qt side.
 
 ```
-src/app       main.cpp, PopupWindow, PasteController (later: EditorWindow, Settings)
+src/app       main.cpp, PopupWindow, PasteController, EditorWindow (later: Settings)
 src/core      SecureBytes, Crypto, SnippetStore, JsonImport, ExportFile   -- unit tested
 src/platform  GlobalHotkey.mm  -> Carbon
               Pasteboard.mm    -> AppKit NSPasteboard
@@ -118,7 +119,7 @@ Target: the paste completes about 0.1 s after a snippet is chosen.
      insensitive, any order). The list grows downwards with the matches.
      No match shows nothing.
    - Up/Down move, Return chooses, ⌘1–⌘9 choose the first nine matches directly, Esc closes.
-   - With no snippets at all, a line points to Import JSON….
+   - With no snippets at all, a line points to the editor (Edit…).
 4. **Decrypt and copy.** Every item on the pasteboard is saved with all of its types.
    The chosen body is decrypted and written with the ConcealedType and TransientType markers,
    and the resulting `changeCount` is recorded. If our previous secret is still on the
@@ -145,9 +146,19 @@ The editor shows plain text, so opening it requires owner authentication.
 - **Authentication.** `LAPolicyDeviceOwnerAuthentication`: Touch ID when available, otherwise an
   Apple Watch or the login password.
 - **Layout.** Titles on the left (add, delete, drag to reorder); title and body on the right.
-- **Body.** Masked by default and shown only while a Show button is held, for screen sharing.
-- **Save and close.** Every save re-encrypts the file. Closing the editor, or 2 minutes without
-  input, discards the plain text; the next open authenticates again.
+  A ⋯ button under the list holds Import JSON… (and the export and import actions later).
+  An agent app may get no menu bar of its own, so the window carries its menu.
+- **Body.** Shown in plain text. Only the selected snippet is decrypted.
+  The body is not masked: authentication keeps other people out, and screen sharing is handled
+  by not opening the editor while sharing (see Threat model). A mask would have meant two
+  editors, one line masked and several lines shown on demand, for little gain.
+- **Save.** Changes are saved as they are made, with no Save button: add, delete and reorder at
+  once, title and body edits when another snippet is selected, on ⌘S, on close and on quit.
+  Every save re-encrypts the file.
+- **Close.** Closing the editor, or 2 minutes without input, saves and deletes the window; the
+  next open authenticates again. The widgets hold the shown body in a `QString`, which cannot be
+  wiped, so plain text may stay in freed memory after closing. Accepted: it is one snippet, and
+  only after the owner opened it.
 - **Settings.** Only the shortcut and the clear delay, stored with `QSettings`.
 
 ## Import and export
@@ -168,8 +179,6 @@ Run from the editor's menu, which is already authenticated.
   without breaking old files; imports refuse counts above 10,000,000.
 - The JSON file is plain text. After importing, μSnip offers to move it to the Trash.
   The user deletes the Clipy snippets and any intermediate files by hand.
-
-Until the editor exists, Import JSON… sits in the menu bar menu so the paste flow can be tried.
 
 ## Build, signing and permissions
 

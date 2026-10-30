@@ -63,7 +63,8 @@ Notarization is not needed for an app you build yourself.
 
 ## Adding snippets
 
-Until the editor exists, use **Import JSON…** in the menu bar menu with a file like:
+Choose **Edit…** in the menu bar menu and authenticate. Add snippets with **+**, or bring
+many in at once with **⋯ → Import JSON…** and a file like:
 
 ```json
 [

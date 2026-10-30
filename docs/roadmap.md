@@ -51,7 +51,7 @@ These cannot be checked in CI. Record the results here.
 
 ## Phase 2: Daily use without the editor
 
-- [x] Show an error in the popup when there are no snippets, pointing to Import JSON…
+- [x] Show an error in the popup when there are no snippets, pointing to Import JSON… (now to Edit…)
 - [x] Popup shows titles only after typing; ⌘1–⌘9 choose among the matches (design.md, paste flow)
 - [x] Log nothing that contains titles or bodies (audit)
       2026-10-31: nothing in `src` logs. Dialogs and the tray show only paths, counts and
@@ -61,11 +61,14 @@ These cannot be checked in CI. Record the results here.
 
 ## Phase 3: Editor
 
-- [ ] `EditorWindow`: list on the left (add, delete, drag to reorder), title and body on the right
-- [ ] Open only after `platform::authenticateOwner`; discard plain text on close or after 2 minutes idle
-- [ ] Body masked, shown only while Show is held
-- [ ] Save re-encrypts the whole file
-- [ ] Move Import JSON… into the editor's menu
+- [x] `EditorWindow`: list on the left (add, delete, drag to reorder), title and body on the right
+- [x] Open only after `platform::authenticateOwner`; discard plain text on close or after 2 minutes idle
+- [x] Save re-encrypts the whole file, as changes are made (no Save button)
+- [x] Move Import JSON… into the editor's ⋯ menu
+- [ ] Verify on a real Mac: authentication, edit and reorder reach the popup and survive a
+      restart, idle close, Import JSON…, pasting while the editor is open
+
+The masked body was dropped (design.md, editor and authentication).
 
 ## Phase 4: Settings, export and import
 
