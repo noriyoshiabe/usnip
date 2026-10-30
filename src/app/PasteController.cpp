@@ -7,6 +7,7 @@
 #include <QCursor>
 
 #include <chrono>
+#include <unistd.h>
 
 namespace usnip {
 
@@ -14,7 +15,7 @@ namespace {
 
 using namespace std::chrono_literals;
 
-constexpr auto kRestoreDelay = 10s;
+constexpr auto kRestoreDelay = 5s;
 // Time for the previous app to take focus back before Cmd+V. Tuned in roadmap phase 1.
 constexpr auto kPasteDelay = 50ms;
 
@@ -34,10 +35,13 @@ PasteController::~PasteController() = default;
 
 void PasteController::showPopup()
 {
-    if (m_popup->isVisible()) {
+    // Ask macOS who is in front rather than trusting isVisible() alone: after another app takes
+    // over, Qt may still report the popup as visible, and the shortcut must not go dead.
+    const pid_t frontmost = platform::frontmostApplicationPid();
+    if (m_popup->isVisible() && frontmost == getpid()) {
         return;
     }
-    m_previousApp = platform::frontmostApplicationPid();
+    m_previousApp = frontmost;
 
     QStringList titles;
     for (const Snippet &snippet : m_store.snippets()) {

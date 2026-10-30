@@ -5,7 +5,7 @@ A minimal macOS menu bar app for pasting secrets such as database passwords from
 - Press ⌥⌘V, pick a title, and μSnip pastes the snippet into the app you were using.
 - Snippets are encrypted on disk; the key stays in your login keychain.
 - The copy is marked as concealed, so clipboard history apps can ignore it, and it is removed
-  after 10 seconds, putting back whatever was on the clipboard before.
+  after 5 seconds, putting back whatever was on the clipboard before.
 
 No third-party dependencies beyond Qt. See [docs/design.md](docs/design.md) for how it works
 and [docs/roadmap.md](docs/roadmap.md) for what is done. μSnip is under development.
@@ -34,14 +34,19 @@ cmake --build build --target deploy
 
 ## Signing with a self-signed certificate
 
-macOS ties the Accessibility permission and the Keychain item's access list to the app's code
-signature. Without a stable signature, every rebuild looks like a new app, and macOS asks for
-both again. A self-signed certificate fixes that and costs nothing:
+macOS ties the Accessibility permission to the app's code signature. With the linker's ad-hoc
+signature, every rebuild looks like a new app and needs the permission again. A self-signed
+certificate keeps it across rebuilds and costs nothing:
 
 1. Open Keychain Access, then Keychain Access > Certificate Assistant > Create a Certificate…
 2. Name: `uSnip Local`. Identity Type: Self Signed Root. Certificate Type: Code Signing.
 3. Pass the name to CMake as `USNIP_CODESIGN_IDENTITY` (see Build). The app is signed after
-   every build.
+   every build. `security find-identity -p codesigning` lists the certificate as
+   `CSSMERR_TP_NOT_TRUSTED`; that does not stop codesign.
+
+The Keychain is different. A certificate without an Apple team ID cannot keep the keychain
+item's access: macOS records the build's code hash, so the first launch after each rebuild
+asks whether μSnip may read its key. Choose Always Allow.
 
 Notarization is not needed for an app you build yourself.
 
@@ -49,8 +54,8 @@ Notarization is not needed for an app you build yourself.
 
 - macOS asks for **Accessibility** permission (System Settings > Privacy & Security >
   Accessibility). It is needed to send Cmd+V. Without it, μSnip only copies.
-- The encryption key is created in your login keychain. If you rebuild with a different
-  signature, macOS asks whether μSnip may read it again; choose Always Allow.
+- The encryption key is created in your login keychain. After each rebuild, macOS asks
+  whether μSnip may read it again; choose Always Allow (see Signing).
 - Data lives in `~/Library/Application Support/uSnip/snippets.bin`.
 
 ## Adding snippets

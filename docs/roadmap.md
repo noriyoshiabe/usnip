@@ -16,11 +16,17 @@ Design details are in [design.md](design.md).
 
 These cannot be checked in CI. Record the results here.
 
-- [ ] Focus returns to the original app and Cmd+V lands there. Try Terminal, iTerm2, a browser
+- [x] Focus returns to the original app and Cmd+V lands there. Try Terminal, iTerm2, a browser
       address bar, a browser text field and a Qt app. Tune `kPasteDelay` in
       `src/app/PasteController.cpp`.
-- [ ] The popup takes keyboard focus while another app is active (`Qt::Popup` + `activateSelf`).
+      2026-10-31, macOS 27.0.1: works in Terminal, the Chrome address bar and a page field,
+      Safari and a minimal Qt 6.11 app, with `kPasteDelay` left at 50 ms. iTerm2 is not in
+      use and was skipped. Esc returns to the original app as well.
+- [x] The popup takes keyboard focus while another app is active (`Qt::Popup` + `activateSelf`).
       If not, switch to a `Qt::Tool` window that hides on deactivation.
+      2026-10-31: the app was activated, but a `Qt::Popup` never became the key window, so
+      typing went nowhere. Switched to `Qt::Tool`, hidden on `applicationStateChanged`, since
+      Qt keeps reporting the window as active and visible after another app takes over.
 - [x] Clipy (and any other history app in use) ignores copies with ConcealedType.
       2026-10-31, macOS 27.0.1, Clipy 1.4.0 (the only history app in use): a copy written by
       `Pasteboard::writeConcealed` did not reach Clipy's history; a plain copy right after it
@@ -33,6 +39,10 @@ These cannot be checked in CI. Record the results here.
       Copies from Finder and from a browser image were not tried separately.
 - [ ] With a self-signed certificate, Accessibility permission and the Keychain item survive
       a rebuild without new prompts. Also check after `deploy`.
+      2026-10-31, rebuilds: Accessibility survives. The Keychain asks again after every
+      rebuild, because a certificate without a team ID puts the build's `cdhash` in the item's
+      partition list. Accepted rather than depending on a paid Apple developer account; the
+      README says so. `deploy` not checked yet.
 - [ ] `⌥⌘V` does not clash with anything in daily use.
       2026-10-31: not taken by the system shortcuts or by Clipy (⇧⌘V, ⌃⌘V, ⇧⌘B, ⌃⌥⇧⌘V).
       Finder uses ⌥⌘V to move copied files, which a global shortcut hides.

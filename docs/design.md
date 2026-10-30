@@ -12,10 +12,10 @@ Web site passwords are out of scope: they belong in the macOS Passwords app.
 
 | # | Requirement | How |
 | --- | --- | --- |
-| 1 | A shortcut shows the list of snippet titles | Carbon `RegisterEventHotKey`, a Qt popup |
+| 1 | A shortcut shows the list of snippet titles | Carbon `RegisterEventHotKey`, a Qt tool window |
 | 2 | Choosing one copies it and pastes it | `NSPasteboard`, then Cmd+V via `CGEventPost` |
 | 3 | Clipboard history apps ignore the copy | `org.nspasteboard.ConcealedType` and `TransientType` |
-| 4 | The copy is removed after 10 seconds | Clear if `changeCount` is unchanged, then restore the previous contents |
+| 4 | The copy is removed after 5 seconds | Clear if `changeCount` is unchanged, then restore the previous contents |
 | 5 | Snippets are encrypted | AES-256-CBC + HMAC-SHA256, key in the Keychain |
 | 6 | Snippets can be added and edited | Qt editor window, opened after owner authentication |
 
@@ -33,8 +33,8 @@ A process running as the same user must not get plain text just by reading files
 | Another process reads the key from the Keychain | The item's access list trusts only μSnip's signature; others trigger a prompt | Yes, if the prompt is denied |
 | Backups or cloud sync copy the file | The key stays in the local login keychain, not iCloud | Yes |
 | Clipboard history apps store the secret | ConcealedType marker | Apps that follow nspasteboard.org |
-| The secret stays on the pasteboard | Cleared after 10 seconds | Yes |
-| Malware reads the pasteboard within those 10 seconds | None | No |
+| The secret stays on the pasteboard | Cleared after 5 seconds | Yes |
+| Malware reads the pasteboard within those 5 seconds | None | No |
 | Keyloggers, root compromise, someone using the unlocked Mac | None | Out of scope |
 
 Anyone who can use the unlocked Mac can paste snippets. That is the accepted price of
@@ -84,6 +84,9 @@ The item is not synchronizable. Its default access list trusts the creating app'
 signature, so μSnip reads it without a prompt and other apps get one. The data protection
 keychain would need an entitlement and a paid developer account, so it is not used.
 A new key is only created when the item does not exist; a denied prompt never replaces it.
+The item's partition list holds the creating build's `cdhash`, because a self-signed app has no
+team ID. Each rebuild therefore asks once more, and Always Allow adds the new hash. Other
+processes still get the prompt.
 
 **The data file.** `~/Library/Application Support/uSnip/snippets.bin`, mode 0600, written
 atomically (`QSaveFile`).
@@ -112,12 +115,12 @@ Target: the paste completes about 0.1 s after a snippet is chosen.
 4. **Decrypt and copy.** Every item on the pasteboard is saved with all of its types.
    The chosen body is decrypted and written with the ConcealedType and TransientType markers,
    and the resulting `changeCount` is recorded. If our previous secret is still on the
-   pasteboard (two pastes within 10 seconds), the earlier saved contents are kept instead of
+   pasteboard (two pastes within 5 seconds), the earlier saved contents are kept instead of
    saving the secret.
 5. **Return and paste.** The popup closes, the recorded app is activated, and after a short
-   delay (50 ms, to be tuned) Cmd+V is posted with `CGEventPost`.
+   delay (50 ms) Cmd+V is posted with `CGEventPost`.
    Without Accessibility permission μSnip only copies.
-6. **Clear after 10 seconds.** If `changeCount` is unchanged, the pasteboard is cleared and the
+6. **Clear after 5 seconds.** If `changeCount` is unchanged, the pasteboard is cleared and the
    saved contents are written back. If it changed, the user copied something else; the saved
    contents are dropped. On quit, a pending restore happens immediately. Restored items keep
    their original types, including another app's ConcealedType.
@@ -168,10 +171,12 @@ Until the editor exists, Import JSON… sits in the menu bar menu so the paste f
   CommonCrypto is part of libSystem and needs no extra linking.
 - `cmake --build build --target deploy` runs `macdeployqt`, so Homebrew Qt upgrades cannot
   break the app, then signs again.
-- **Signing.** Accessibility permission and the Keychain access list are tied to the code
-  signature. An ad-hoc signature changes on every build, which means granting permissions again
-  after each rebuild. Signing with the same self-signed certificate every time keeps them
-  (`USNIP_CODESIGN_IDENTITY`, see the README).
+- **Signing.** Accessibility permission follows the code signature's designated requirement.
+  An ad-hoc signature changes on every build, which means granting it again after each
+  rebuild; signing with the same self-signed certificate keeps it (`USNIP_CODESIGN_IDENTITY`,
+  see the README). Keychain access cannot be kept that way (see Encryption and key
+  management). An Apple Development certificate would keep both, but μSnip must not depend
+  on a paid developer account.
 - **Accessibility.** Requested with `AXIsProcessTrustedWithOptions` on launch.
 - **Notarization.** Not needed: a locally built app has no quarantine attribute. If μSnip is
   published, users build it themselves.

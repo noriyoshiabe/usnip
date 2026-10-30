@@ -9,6 +9,8 @@ class QListWidget;
 namespace usnip {
 
 // Frameless list of snippet titles shown near the mouse cursor.
+// A Qt::Tool window rather than Qt::Popup: on macOS a Qt popup never becomes the key window,
+// and with no other window of ours to forward keys from, typing would go nowhere.
 // Typing filters, Up/Down move, Return chooses, Esc closes, 1-9 choose directly while the
 // filter is empty.
 class PopupWindow : public QWidget {
@@ -23,11 +25,11 @@ public:
 signals:
     // index refers to the list given to setTitles(), not to the filtered rows.
     void chosen(int index);
+    // Esc closed the popup. Not emitted when it hides because another app took the focus.
     void dismissed();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
-    void hideEvent(QHideEvent *event) override;
 
 private:
     void applyFilter(const QString &text);
@@ -36,7 +38,6 @@ private:
 
     QLineEdit *m_filter;
     QListWidget *m_list;
-    bool m_choosing = false;
 };
 
 } // namespace usnip
