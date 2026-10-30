@@ -152,6 +152,8 @@ The editor shows plain text, so opening it requires owner authentication.
 - **Authentication.** `LAPolicyDeviceOwnerAuthentication`: Touch ID when available, otherwise an
   Apple Watch or the login password.
 - **Layout.** Titles on the left (add, delete, drag to reorder); title and body on the right.
+  The list takes ⌘-click and ⇧-click, so several snippets (say, a repeated import) are deleted
+  with one confirmation. The right side shows the current one.
   A ⋯ button under the list holds Export to .usnip…, Import .usnip… and Import JSON….
   An agent app may get no menu bar of its own, so the window carries its menu.
 - **Body.** Shown in plain text. Only the selected snippet is decrypted.

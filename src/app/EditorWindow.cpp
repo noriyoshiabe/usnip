@@ -96,6 +96,8 @@ EditorWindow::EditorWindow(SnippetStore &store, const QString &storePath, QWidge
     layout->addWidget(splitter);
 
     m_list->setDragDropMode(QAbstractItemView::InternalMove);
+    // Importing the same file twice duplicates its snippets; this deletes them in one go.
+    m_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_title->setPlaceholderText(tr("Title"));
     // Passwords are easier to check when l, 1 and I look different.
     m_body->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
@@ -252,20 +254,24 @@ void EditorWindow::addSnippet()
 
 void EditorWindow::removeSnippet()
 {
-    const QListWidgetItem *item = m_list->currentItem();
-    if (!item) {
+    const QList<QListWidgetItem *> items = m_list->selectedItems();
+    if (items.isEmpty()) {
         return;
     }
-    const auto answer =
-        QMessageBox::question(this, windowTitle(), tr("Delete \"%1\"?").arg(item->text()));
-    if (answer != QMessageBox::Yes) {
+    const QString question =
+        items.size() == 1 ? tr("Delete \"%1\"?").arg(items.first()->text())
+                          : tr("Delete %n snippet(s)?", nullptr, static_cast<int>(items.size()));
+    if (QMessageBox::question(this, windowTitle(), question) != QMessageBox::Yes) {
         return;
     }
-    const int row = m_list->currentRow();
-    const int index = indexOf(item->data(kIdRole).toString());
-    // The body on screen is being deleted, so there is nothing to commit.
+    // The shown snippet may be one that stays.
+    commit();
+    int row = m_list->count();
+    for (const QListWidgetItem *item : items) {
+        row = std::min(row, m_list->row(item));
+        m_store.remove(static_cast<std::size_t>(indexOf(item->data(kIdRole).toString())));
+    }
     m_shownId.clear();
-    m_store.remove(static_cast<std::size_t>(index));
     save();
     reloadList(row);
 }
