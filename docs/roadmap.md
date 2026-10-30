@@ -89,6 +89,9 @@ The masked body was dropped (design.md, editor and authentication).
 
 ## Phase 5: Publish
 
-- [ ] README: screenshots, full build and signing walkthrough
-- [ ] Choose and add the license (GPL planned)
+- [x] README: full build and signing walkthrough
+- [x] Choose and add the license: GPL-3.0-or-later
+- [x] Tag 0.9.0, the first release for daily use
+- [ ] Polish the look of the popup, editor and settings window
+- [ ] README: screenshots, once the look is settled
 - [ ] Tag 1.0

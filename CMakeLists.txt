@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(uSnip VERSION 0.1.0 LANGUAGES CXX)
+project(uSnip VERSION 0.9.0 LANGUAGES CXX)
 if(APPLE)
     enable_language(OBJCXX)
 endif()
