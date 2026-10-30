@@ -171,8 +171,9 @@ Until the editor exists, Import JSON… sits in the menu bar menu so the paste f
 - CMake with `LANGUAGES CXX OBJCXX`, `MACOSX_BUNDLE`, Qt 6 from Homebrew.
 - Frameworks: AppKit, ApplicationServices, Carbon, LocalAuthentication, Security.
   CommonCrypto is part of libSystem and needs no extra linking.
-- `cmake --build build --target deploy` runs `macdeployqt`, so Homebrew Qt upgrades cannot
-  break the app, then signs again.
+- `cmake --build build --target deploy` copies the app to `build/deploy/` and runs
+  `macdeployqt` on the copy, so Homebrew Qt upgrades cannot break it, then signs again.
+  The copy keeps later builds from relinking a bundle that already holds Qt.
 - **Signing.** Accessibility permission follows the code signature's designated requirement.
   An ad-hoc signature changes on every build, which means granting it again after each
   rebuild; signing with the same self-signed certificate keeps it (`USNIP_CODESIGN_IDENTITY`,

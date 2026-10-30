@@ -72,13 +72,19 @@ if(APPLE)
             VERBATIM)
     endif()
 
-    # Bundles Qt into the .app so Homebrew Qt upgrades cannot break it, then signs again.
+    # Bundles Qt into a copy of the .app so Homebrew Qt upgrades cannot break it, then signs
+    # again. A copy, because relinking a bundle that already holds Qt mixes two Qt builds and
+    # the app aborts on launch.
     find_program(MACDEPLOYQT macdeployqt HINTS "${Qt6_DIR}/../../../bin")
+    set(USNIP_DEPLOY_BUNDLE "${CMAKE_BINARY_DIR}/deploy/uSnip.app")
     add_custom_target(deploy
-        COMMAND "${MACDEPLOYQT}" "$<TARGET_BUNDLE_DIR:uSnip>"
+        COMMAND ${CMAKE_COMMAND} -E rm -rf "${USNIP_DEPLOY_BUNDLE}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:uSnip>"
+            "${USNIP_DEPLOY_BUNDLE}"
+        COMMAND "${MACDEPLOYQT}" "${USNIP_DEPLOY_BUNDLE}"
         COMMAND codesign --force --deep
             --sign "$<IF:$<BOOL:${USNIP_CODESIGN_IDENTITY}>,${USNIP_CODESIGN_IDENTITY},->"
-            "$<TARGET_BUNDLE_DIR:uSnip>"
+            "${USNIP_DEPLOY_BUNDLE}"
         DEPENDS uSnip
         COMMENT "Bundling Qt into uSnip.app"
         VERBATIM)

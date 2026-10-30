@@ -30,7 +30,10 @@ To bundle Qt into the app (so a Homebrew Qt upgrade cannot break it):
 
 ```sh
 cmake --build build --target deploy
+open build/deploy/uSnip.app
 ```
+
+`build/uSnip.app` keeps using Homebrew's Qt, so later builds do not disturb the bundled copy.
 
 ## Signing with a self-signed certificate
 
