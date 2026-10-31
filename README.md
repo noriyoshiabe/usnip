@@ -48,14 +48,18 @@ open build/uSnip.app
 The app is signed with `USNIP_CODESIGN_IDENTITY` after every build. Without it, the build
 falls back to the ad-hoc signature.
 
-To bundle Qt into the app (so a Homebrew Qt upgrade cannot break it):
+To make a release build with Qt bundled into the app (so a Homebrew Qt upgrade cannot break it):
 
 ```sh
-cmake --build build --target deploy
-open build/deploy/uSnip.app
+cmake -S . -B build-release -G Ninja -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" \
+      -DCMAKE_BUILD_TYPE=Release -DUSNIP_CODESIGN_IDENTITY="uSnip Local"
+cmake --build build-release --target deploy
+open build-release/deploy/uSnip.app
 ```
 
-`build/uSnip.app` keeps using Homebrew's Qt, so later builds do not disturb the bundled copy.
+The `deploy` target signs the bundle with the identity given at configure time, or ad-hoc
+without one. To change the identity, configure again; `cmake --build` does not take `-D`.
+The release build lives in its own directory, so development builds do not disturb it.
 
 ## First launch
 
