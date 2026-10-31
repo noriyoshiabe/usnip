@@ -52,6 +52,8 @@ if(APPLE)
         src/platform/GlobalHotkey.mm
         src/platform/Keychain.h
         src/platform/Keychain.mm
+        src/platform/Panel.h
+        src/platform/Panel.mm
         src/platform/Pasteboard.h
         src/platform/Pasteboard.mm
         src/platform/Paste.h

@@ -2,12 +2,12 @@
 
 #include "PopupWindow.h"
 #include "core/SnippetStore.h"
+#include "platform/Panel.h"
 #include "platform/Paste.h"
 
 #include <QCursor>
 
 #include <chrono>
-#include <unistd.h>
 
 namespace usnip {
 
@@ -43,19 +43,21 @@ void PasteController::setPopupPosition(settings::PopupPosition position)
 
 void PasteController::showPopup()
 {
-    // Ask macOS who is in front rather than trusting isVisible() alone: after another app takes
-    // over, Qt may still report the popup as visible, and the shortcut must not go dead.
-    const pid_t frontmost = platform::frontmostApplicationPid();
-    if (m_popup->isVisible() && frontmost == getpid()) {
+    // Ask macOS for the key window rather than trusting isVisible() alone: after another app
+    // takes over, Qt may still report the popup as visible, and the shortcut must not go dead.
+    if (m_popup->isVisible() && platform::isKeyWindow(m_popup.get())) {
         return;
     }
-    m_previousApp = frontmost;
+    m_previousApp = platform::frontmostApplicationPid();
 
     QStringList titles;
     for (const Snippet &snippet : m_store.snippets()) {
         titles.append(snippet.title);
     }
     m_popup->setTitles(titles);
+    // Activation lets input methods reach the filter, but macOS may refuse it, for example
+    // while Terminal waits for a password. The popup is a non-activating panel, so it shows
+    // and takes plain typing either way.
     platform::activateSelf();
     if (m_popupPosition == settings::PopupPosition::ScreenCenter) {
         m_popup->showCentered(QCursor::pos());

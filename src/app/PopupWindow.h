@@ -12,6 +12,8 @@ namespace usnip {
 // Frameless list of snippet titles shown near the mouse cursor or at the centre of its screen.
 // A Qt::Tool window rather than Qt::Popup: on macOS a Qt popup never becomes the key window,
 // and with no other window of ours to forward keys from, typing would go nowhere.
+// It is made a non-activating panel (platform/Panel.h) so it shows even when macOS refuses
+// to activate the app.
 // Titles stay hidden until something is typed, so work and private snippets are not shown
 // side by side on screen. Typing filters, Up/Down move, Return chooses, Cmd+1-9 choose the
 // first nine matches directly, Esc closes.

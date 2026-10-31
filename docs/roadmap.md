@@ -97,5 +97,11 @@ The masked body was dropped (design.md, editor and authentication).
   - [x] Settings: show the popup near the cursor or at the centre of the screen
         2026-10-31, macOS 27: the icon sits level with the system icons, and both popup
         positions work.
+- [x] The popup shows over Terminal waiting for a password (`mysql -p`)
+      2026-10-31, macOS 27: the shortcut arrived, but Terminal kept the activation, so the
+      Qt tool window stayed hidden. The popup is now a non-activating panel (design.md, paste
+      flow): it shows, filters and pastes there, with plain typing only. Elsewhere activation
+      succeeds and Japanese input works as before. Esc, clicking another app and pressing the
+      shortcut repeatedly work in both cases.
 - [ ] README: screenshots, once the look is settled
 - [ ] Tag 1.0

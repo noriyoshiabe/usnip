@@ -12,7 +12,7 @@ Web site passwords are out of scope: they belong in the macOS Passwords app.
 
 | # | Requirement | How |
 | --- | --- | --- |
-| 1 | A shortcut shows the list of snippet titles | Carbon `RegisterEventHotKey`, a Qt tool window |
+| 1 | A shortcut shows the list of snippet titles | Carbon `RegisterEventHotKey`, a Qt tool window as a non-activating panel |
 | 2 | Choosing one copies it and pastes it | `NSPasteboard`, then Cmd+V via `CGEventPost` |
 | 3 | Clipboard history apps ignore the copy | `org.nspasteboard.ConcealedType` and `TransientType` |
 | 4 | The copy is removed after 5 seconds (configurable) | Clear if `changeCount` is unchanged, then restore the previous contents |
@@ -54,6 +54,7 @@ src/core      SecureBytes, Crypto, SnippetStore, JsonImport, ExportFile   -- uni
 src/platform  GlobalHotkey.mm  -> Carbon
               Pasteboard.mm    -> AppKit NSPasteboard
               Paste.mm         -> NSWorkspace, CGEvent, Accessibility
+              Panel.mm         -> AppKit NSPanel (non-activating popup)
               Keychain.mm      -> Security.framework
               Auth.mm          -> LocalAuthentication
               StatusItem.mm    -> AppKit NSStatusItem (menu bar icon)
@@ -124,6 +125,12 @@ Target: the paste completes about 0.1 s after a snippet is chosen.
      No match shows nothing.
    - Up/Down move, Return chooses, ⌘1–⌘9 choose the first nine matches directly, Esc closes.
    - With no snippets at all, a line points to the editor (Edit…).
+   - The popup is a non-activating panel: it becomes the key window without μSnip being the
+     active app. μSnip still asks to be activated, because input methods such as Japanese
+     only serve the active app, but macOS may refuse. Terminal waiting for a password
+     (`mysql -p`) does not give up activation, and a plain Qt tool window would then stay
+     hidden. There the filter takes plain typing only.
+   - Clicking another window takes the key status away and hides the popup.
 4. **Decrypt and copy.** Every item on the pasteboard is saved with all of its types.
    The chosen body is decrypted and written with the ConcealedType and TransientType markers,
    and the resulting `changeCount` is recorded. If our previous secret is still on the

@@ -93,8 +93,16 @@ recovered.
 ## Settings
 
 **Settings…** in the menu bar menu changes the shortcut (click the field and type the new
-combination) and how long a pasted snippet stays on the clipboard. μSnip cannot tell whether
-another app already uses a shortcut, so pick one that nothing else needs.
+combination) and how long a pasted snippet stays on the clipboard.
+
+## Known limitations
+
+- μSnip cannot tell whether another app already uses a shortcut, so pick one that nothing
+  else needs.
+- While a terminal waits for a password (for example `mysql -p`), macOS does not let μSnip
+  become the active app. The popup still shows and pastes, but its filter takes plain typing
+  only; input methods such as Japanese do not reach it. Name snippets so that a few Latin
+  letters find them.
 
 ## License
 

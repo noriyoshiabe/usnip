@@ -1,5 +1,7 @@
 #include "PopupWindow.h"
 
+#include "platform/Panel.h"
+
 #include <QApplication>
 #include <QKeyEvent>
 #include <QLabel>
@@ -108,15 +110,11 @@ PopupWindow::PopupWindow(QWidget *parent)
     connect(m_list, &QListWidget::itemClicked, this,
             [this](QListWidgetItem *item) { chooseRow(m_list->row(item)); });
 
-    // Clicking another app deactivates us. That app already has the focus, so only hide; Esc
-    // is what hands the focus back. Qt's per-window ActivationChange cannot be used: when
-    // another app takes over, Qt still reports this Qt::Tool window as active and visible.
-    connect(qApp, &QGuiApplication::applicationStateChanged, this,
-            [this](Qt::ApplicationState state) {
-                if (state != Qt::ApplicationActive) {
-                    hide();
-                }
-            });
+    platform::makeNonactivatingPanel(this);
+    // Clicking another window takes the key status away. That window already has the focus,
+    // so only hide. Qt's ActivationChange cannot be used: Qt keeps reporting this window as
+    // active after another app takes over, and the app itself is never activated.
+    platform::onResignKey(this, [this] { hide(); });
 }
 
 void PopupWindow::setTitles(const QStringList &titles)
@@ -152,9 +150,7 @@ void PopupWindow::showAt(const QPoint &topLeft)
 {
     move(topLeft);
     useStrongSelection(m_list);
-    show();
-    raise();
-    activateWindow();
+    platform::showAsKeyPanel(this);
     m_filter->setFocus();
 }
 
