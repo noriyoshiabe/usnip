@@ -93,5 +93,6 @@ The masked body was dropped (design.md, editor and authentication).
 - [x] Choose and add the license: GPL-3.0-or-later
 - [x] Tag 0.9.0, the first release for daily use
 - [ ] Polish the look of the popup, editor and settings window
+  - [x] Menu bar icon "μS", centred on the ink rather than the font metrics
 - [ ] README: screenshots, once the look is settled
 - [ ] Tag 1.0

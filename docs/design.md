@@ -144,10 +144,10 @@ once more; they were there already.
 
 The editor shows plain text, so opening it requires owner authentication.
 
-- **Entry point.** A menu bar icon (`NSStatusItem`, drawn "μ") with Edit…, Settings…, Quit.
-  Not `QSystemTrayIcon`: in Qt 6.11 it reads `clickCount` from `NSApp.currentEvent` without
-  checking the event type. On macOS 27 the menu opens from a scene action, so after typing in
-  the editor that event is a key event and AppKit aborts the app.
+- **Entry point.** A menu bar icon (`NSStatusItem`, drawn "μS", centred on the ink) with Edit…,
+  Settings…, Quit. Not `QSystemTrayIcon`: in Qt 6.11 it reads `clickCount` from
+  `NSApp.currentEvent` without checking the event type. On macOS 27 the menu opens from a scene
+  action, so after typing in the editor that event is a key event and AppKit aborts the app.
   `LSUIElement` keeps μSnip out of the Dock.
 - **Authentication.** `LAPolicyDeviceOwnerAuthentication`: Touch ID when available, otherwise an
   Apple Watch or the login password.

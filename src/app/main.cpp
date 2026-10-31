@@ -12,8 +12,11 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPointer>
 #include <QStandardPaths>
+
+#include <algorithm>
 
 using namespace usnip;
 
@@ -29,17 +32,33 @@ QString storePath()
 }
 
 // Drawn at 2x for a 22 pt menu bar icon. Only the alpha matters: it is used as a template.
+// Centred on the ink rather than with drawText(): font metrics include the line height and side
+// bearings, and μ hangs below the baseline, so text centred on its metrics looked off centre.
+// The ink is then lowered a little: most of it sits above the baseline, with only the thin tail
+// of μ below, so the exact ink centre still looked high next to the system icons.
 QImage statusIcon()
 {
-    QImage image(44, 44, QImage::Format_ARGB32_Premultiplied);
+    constexpr int kSize = 44;
+    constexpr qreal kInkHeight = 23;
+    constexpr qreal kMaxInkWidth = 40;
+    constexpr qreal kDrop = 2;
+
+    QFont font;
+    font.setPixelSize(100);
+    font.setBold(true);
+    QPainterPath path;
+    path.addText(0, 0, font, QStringLiteral("μS"));
+    const QRectF ink = path.boundingRect();
+    const qreal scale = std::min(kInkHeight / ink.height(), kMaxInkWidth / ink.width());
+
+    QImage image(kSize, kSize, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
-    QFont font = painter.font();
-    font.setPixelSize(36);
-    font.setBold(true);
-    painter.setFont(font);
-    painter.setPen(Qt::black);
-    painter.drawText(image.rect(), Qt::AlignCenter, QStringLiteral("μ"));
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.translate(kSize / 2.0, kSize / 2.0 + kDrop);
+    painter.scale(scale, scale);
+    painter.translate(-ink.center());
+    painter.fillPath(path, Qt::black);
     painter.end();
     return image;
 }
