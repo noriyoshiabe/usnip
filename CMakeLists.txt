@@ -89,13 +89,28 @@ if(APPLE)
     # Bundles Qt into a copy of the .app so Homebrew Qt upgrades cannot break it, then signs
     # again. A copy, because relinking a bundle that already holds Qt mixes two Qt builds and
     # the app aborts on launch.
+    #
+    # Only the two plugins the app needs go in. Left to itself, macdeployqt copies every
+    # plugin Homebrew installed (image formats, SVG icons, the virtual keyboard), drags in
+    # QtQml and QtQuick for them, and reports errors for the frameworks it cannot find in
+    # other Homebrew kegs. With -no-plugins it still relinks the plugins placed beforehand,
+    # but writes no qt.conf; without one, Qt would look for plugins in Homebrew's Qt.
     find_program(MACDEPLOYQT macdeployqt HINTS "${Qt6_DIR}/../../../bin")
     set(USNIP_DEPLOY_BUNDLE "${CMAKE_BINARY_DIR}/deploy/uSnip.app")
+    set(USNIP_DEPLOY_PLUGINS "${USNIP_DEPLOY_BUNDLE}/Contents/PlugIns")
     add_custom_target(deploy
         COMMAND ${CMAKE_COMMAND} -E rm -rf "${USNIP_DEPLOY_BUNDLE}"
         COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:uSnip>"
             "${USNIP_DEPLOY_BUNDLE}"
-        COMMAND "${MACDEPLOYQT}" "${USNIP_DEPLOY_BUNDLE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${USNIP_DEPLOY_PLUGINS}/platforms"
+            "${USNIP_DEPLOY_PLUGINS}/styles"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:Qt6::QCocoaIntegrationPlugin>"
+            "${USNIP_DEPLOY_PLUGINS}/platforms/"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:Qt6::QMacStylePlugin>"
+            "${USNIP_DEPLOY_PLUGINS}/styles/"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/cmake/qt.conf"
+            "${USNIP_DEPLOY_BUNDLE}/Contents/Resources/qt.conf"
+        COMMAND "${MACDEPLOYQT}" "${USNIP_DEPLOY_BUNDLE}" -no-plugins
         COMMAND codesign --force --deep
             --sign "$<IF:$<BOOL:${USNIP_CODESIGN_IDENTITY}>,${USNIP_CODESIGN_IDENTITY},->"
             "${USNIP_DEPLOY_BUNDLE}"
