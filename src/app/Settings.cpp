@@ -9,6 +9,9 @@ namespace {
 const QString kKeyCodeKey = QStringLiteral("shortcut/keyCode");
 const QString kModifiersKey = QStringLiteral("shortcut/modifiers");
 const QString kClearDelayKey = QStringLiteral("clearDelaySeconds");
+const QString kPopupPositionKey = QStringLiteral("popupPosition");
+const QString kNearCursorValue = QStringLiteral("cursor");
+const QString kScreenCenterValue = QStringLiteral("center");
 
 } // namespace
 
@@ -52,6 +55,26 @@ void setClearDelay(std::chrono::seconds delay)
 {
     QSettings settings;
     settings.setValue(kClearDelayKey, static_cast<int>(delay.count()));
+}
+
+PopupPosition popupPosition()
+{
+    const QString value = QSettings().value(kPopupPositionKey).toString();
+    if (value == kNearCursorValue) {
+        return PopupPosition::NearCursor;
+    }
+    if (value == kScreenCenterValue) {
+        return PopupPosition::ScreenCenter;
+    }
+    return kDefaultPopupPosition;
+}
+
+void setPopupPosition(PopupPosition position)
+{
+    QSettings settings;
+    settings.setValue(kPopupPositionKey, position == PopupPosition::ScreenCenter
+                                             ? kScreenCenterValue
+                                             : kNearCursorValue);
 }
 
 } // namespace usnip::settings

@@ -4,6 +4,7 @@
 
 #include <QWidget>
 
+class QComboBox;
 class QSpinBox;
 
 namespace usnip {
@@ -11,7 +12,8 @@ namespace usnip {
 class PasteController;
 class ShortcutEdit;
 
-// The shortcut and the clear delay. Changes apply and are stored at once (QSettings).
+// The shortcut, the clear delay and where the popup appears. Changes apply and are stored at once
+// (QSettings).
 class SettingsWindow : public QWidget {
     Q_OBJECT
 
@@ -26,6 +28,7 @@ private:
     PasteController &m_controller;
     ShortcutEdit *m_shortcut;
     QSpinBox *m_clearDelay;
+    QComboBox *m_popupPosition;
 };
 
 } // namespace usnip

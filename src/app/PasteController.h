@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Settings.h"
 #include "platform/Pasteboard.h"
 
 #include <QObject>
@@ -26,6 +27,7 @@ public:
 
     // How long a pasted secret stays on the pasteboard before the previous contents return.
     void setClearDelay(std::chrono::milliseconds delay);
+    void setPopupPosition(settings::PopupPosition position);
 
 public slots:
     void showPopup();
@@ -41,6 +43,7 @@ private:
     platform::Pasteboard m_pasteboard;
     QTimer m_restoreTimer;
     pid_t m_previousApp = 0;
+    settings::PopupPosition m_popupPosition = settings::kDefaultPopupPosition;
 };
 
 } // namespace usnip

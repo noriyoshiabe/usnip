@@ -72,6 +72,15 @@ void useStrongSelection(QListWidget *list)
     list->setPalette(palette);
 }
 
+QRect availableArea(const QPoint &globalPos)
+{
+    QScreen *screen = QGuiApplication::screenAt(globalPos);
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    return screen->availableGeometry();
+}
+
 } // namespace
 
 PopupWindow::PopupWindow(QWidget *parent)
@@ -124,19 +133,24 @@ void PopupWindow::setTitles(const QStringList &titles)
 void PopupWindow::showNear(const QPoint &globalPos)
 {
     // The window grows downwards as matches appear, so keep room for the tallest list.
-    const QMargins margins = layout()->contentsMargins();
-    const int maxHeight = margins.top() + m_filter->sizeHint().height() + layout()->spacing() +
-                          kVisibleRows * rowHeight() + 2 * m_list->frameWidth() + margins.bottom();
-
-    QScreen *screen = QGuiApplication::screenAt(globalPos);
-    if (!screen) {
-        screen = QGuiApplication::primaryScreen();
-    }
-    const QRect area = screen->availableGeometry();
+    const QRect area = availableArea(globalPos);
     const int x = std::clamp(globalPos.x(), area.left(), area.right() - width() + 1);
-    const int y = std::clamp(globalPos.y(), area.top(), area.bottom() - maxHeight + 1);
-    move(x, y);
+    const int y = std::clamp(globalPos.y(), area.top(), area.bottom() - maxHeight() + 1);
+    showAt({x, y});
+}
 
+void PopupWindow::showCentered(const QPoint &globalPos)
+{
+    // Centre the tallest list rather than the current window, so the filter stays put while
+    // matches appear below it.
+    const QRect area = availableArea(globalPos);
+    showAt({area.left() + (area.width() - width()) / 2,
+            area.top() + std::max(0, (area.height() - maxHeight()) / 2)});
+}
+
+void PopupWindow::showAt(const QPoint &topLeft)
+{
+    move(topLeft);
     useStrongSelection(m_list);
     show();
     raise();
@@ -229,6 +243,13 @@ void PopupWindow::moveSelection(int delta)
             return;
         }
     }
+}
+
+int PopupWindow::maxHeight() const
+{
+    const QMargins margins = layout()->contentsMargins();
+    return margins.top() + m_filter->sizeHint().height() + layout()->spacing() +
+           kVisibleRows * rowHeight() + 2 * m_list->frameWidth() + margins.bottom();
 }
 
 int PopupWindow::rowHeight() const

@@ -114,7 +114,9 @@ Target: the paste completes about 0.1 s after a snippet is chosen.
    it. It hides the bookmarks bar shortcut of Safari and Chrome. `RegisterEventHotKey` does not
    refuse a shortcut another app has registered, so a clash goes unnoticed.
 2. **Remember the target.** `NSWorkspace.frontmostApplication` is recorded.
-3. **Show the filter** near the mouse cursor, kept inside the screen that holds the cursor.
+3. **Show the filter** near the mouse cursor, kept inside the screen that holds the cursor, or
+   at the centre of that screen (Settings…). Centred, the tallest list is centred, so the
+   filter does not move as matches appear.
    - No title is shown until something is typed, like Spotlight. Work and private snippets
      live side by side, and a full list would put all of them on screen at once.
    - Typing filters: every space-separated word must appear in the title (substring, case
@@ -172,10 +174,10 @@ The editor shows plain text, so opening it requires owner authentication.
 
 ## Settings
 
-Only the shortcut and the clear delay. Settings… in the menu bar menu opens them without
-authentication, since neither reveals a snippet. Changes apply at once and are stored with
-`QSettings` in `~/Library/Preferences/io.github.noriyoshiabe.uSnip.plist`; invalid values fall
-back to the defaults.
+Only the shortcut, the clear delay and where the popup appears. Settings… in the menu bar menu
+opens them without authentication, since none reveals a snippet. Changes apply at once and are
+stored with `QSettings` in `~/Library/Preferences/io.github.noriyoshiabe.uSnip.plist`; invalid
+values fall back to the defaults.
 
 - **Shortcut recorder.** Click the field and type the combination; Esc keeps the old one.
   The key is stored as its virtual key code (`QKeyEvent::nativeVirtualKey`), which is what

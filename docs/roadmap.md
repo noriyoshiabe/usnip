@@ -94,5 +94,6 @@ The masked body was dropped (design.md, editor and authentication).
 - [x] Tag 0.9.0, the first release for daily use
 - [ ] Polish the look of the popup, editor and settings window
   - [x] Menu bar icon "μS", centred on the ink rather than the font metrics
+  - [x] Settings: show the popup near the cursor or at the centre of the screen
 - [ ] README: screenshots, once the look is settled
 - [ ] Tag 1.0

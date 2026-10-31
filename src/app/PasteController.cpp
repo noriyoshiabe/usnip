@@ -36,6 +36,11 @@ void PasteController::setClearDelay(std::chrono::milliseconds delay)
     m_restoreTimer.setInterval(delay);
 }
 
+void PasteController::setPopupPosition(settings::PopupPosition position)
+{
+    m_popupPosition = position;
+}
+
 void PasteController::showPopup()
 {
     // Ask macOS who is in front rather than trusting isVisible() alone: after another app takes
@@ -52,7 +57,12 @@ void PasteController::showPopup()
     }
     m_popup->setTitles(titles);
     platform::activateSelf();
-    m_popup->showNear(QCursor::pos());
+    if (m_popupPosition == settings::PopupPosition::ScreenCenter) {
+        m_popup->showCentered(QCursor::pos());
+    }
+    else {
+        m_popup->showNear(QCursor::pos());
+    }
 }
 
 void PasteController::flush()

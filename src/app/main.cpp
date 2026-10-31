@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
 
     PasteController controller(store);
     controller.setClearDelay(settings::clearDelay());
+    controller.setPopupPosition(settings::popupPosition());
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &controller, &PasteController::flush);
 
     platform::GlobalHotkey hotkey;
