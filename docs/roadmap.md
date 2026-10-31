@@ -95,5 +95,7 @@ The masked body was dropped (design.md, editor and authentication).
 - [ ] Polish the look of the popup, editor and settings window
   - [x] Menu bar icon "μS", centred on the ink rather than the font metrics
   - [x] Settings: show the popup near the cursor or at the centre of the screen
+        2026-10-31, macOS 27: the icon sits level with the system icons, and both popup
+        positions work.
 - [ ] README: screenshots, once the look is settled
 - [ ] Tag 1.0
